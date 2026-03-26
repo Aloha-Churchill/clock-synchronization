@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Learning Flow</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: "Cambria Math", Cambria, Georgia, serif;
+    color: #2a2a2a;
+    background: #fff;
+  }
+
+  .flow {
+    width: 100%;
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 40px 24px 52px;
+  }
+
+  .flow-title {
+    font-family: "Montserrat", sans-serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 40px;
+    color: #1a1a1a;
+  }
+
+  /* ── Zone subheaders ── */
+  .zone-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 8px;
+    padding-left: 48px;
+  }
+  .zone-header span {
+    font-family: "Montserrat", sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+  }
+  .zone-header::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #e8e8e8;
+  }
+  .zone-header.zh-rose span { color: #d4829c; }
+  .zone-header.zh-amber span { color: #d4a04a; }
+  .zone-header.zh-green span { color: #3cb371; }
+
+  .zone-header + .step { margin-top: 4px; }
+
+  /* ── Steps ── */
+  .step {
+    display: flex;
+    gap: 22px;
+    position: relative;
+  }
+
+  .step-rail {
+    width: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .step-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 6px;
+  }
+
+  .step-line {
+    width: 2.5px;
+    flex: 1;
+    min-height: 24px;
+  }
+
+  .step.rose .step-dot { background: #d4829c; }
+  .step.rose .step-line { background: #e8c6d4; }
+  .step.amber .step-dot { background: #d4a04a; }
+  .step.amber .step-line { background: #e8d8b4; }
+  .step.green .step-dot { background: #3cb371; }
+  .step.green .step-line { background: #b4dfc4; }
+
+  .step.rose-to-amber .step-line {
+    background: linear-gradient(to bottom, #e8c6d4, #e8d8b4);
+  }
+  .step.amber-to-green .step-line {
+    background: linear-gradient(to bottom, #e8d8b4, #b4dfc4);
+  }
+
+  .step:last-child .step-line { display: none; }
+
+  .step-body { padding-bottom: 32px; }
+
+  .step-name {
+    font-family: "Montserrat", sans-serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2a2a2a;
+    line-height: 1.35;
+  }
+
+  .step-desc {
+    font-size: 0.95rem;
+    color: #999;
+    margin-top: 4px;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+<div class="flow">
+  <div class="zone-header zh-rose"><span>Foundations</span></div>
+
+  <div class="step rose">
+    <div class="step-rail"><div class="step-dot"></div><div class="step-line"></div></div>
+    <div class="step-body">
+      <div class="step-name">History of Timekeeping</div>
+      <div class="step-desc">How has timekeeping evolved over human history?</div>
+    </div>
+  </div>
+
+  <div class="step rose">
+    <div class="step-rail"><div class="step-dot"></div><div class="step-line"></div></div>
+    <div class="step-body">
+      <div class="step-name">Coordinated Universal Time: UTC</div>
+      <div class="step-desc">What is the time we agree upon?</div>
+    </div>
+  </div>
+
+  <div class="step rose rose-to-amber">
+    <div class="step-rail"><div class="step-dot"></div><div class="step-line"></div></div>
+    <div class="step-body">
+      <div class="step-name">Clocks Inside Your Computer</div>
+      <div class="step-desc">What are the mechanisms you computer uses to keep time?</div>
+    </div>
+  </div>
+
+  <div class="zone-header zh-amber"><span>Synchronization</span></div>
+
+  <div class="step amber">
+    <div class="step-rail"><div class="step-dot"></div><div class="step-line"></div></div>
+    <div class="step-body">
+      <div class="step-name">Clock Synchronization</div>
+      <div class="step-desc">What breaks when machines disagree on the time?</div>
+    </div>
+  </div>
+
+  <div class="step amber amber-to-green">
+    <div class="step-rail"><div class="step-dot"></div><div class="step-line"></div></div>
+    <div class="step-body">
+      <div class="step-name">Network Time Protocol: NTP</div>
+      <div class="step-desc">What is NTP and how does it work?</div>
+    </div>
+  </div>
+
+  <div class="zone-header zh-green"><span>Distributed Systems</span></div>
+
+  <div class="step green">
+    <div class="step-rail"><div class="step-dot"></div><div class="step-line"></div></div>
+    <div class="step-body">
+      <div class="step-name">Event Ordering</div>
+      <div class="step-desc">Why is using local time not good enough in distributed systems?</div>
+    </div>
+  </div>
+
+  <div class="step green">
+    <div class="step-rail"><div class="step-dot"></div><div class="step-line"></div></div>
+    <div class="step-body">
+      <div class="step-name">Lamport & Vector Clocks</div>
+      <div class="step-desc">What are Lamport and vector clocks, and how do they work to ensure event ordering?</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

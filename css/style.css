@@ -1,0 +1,224 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&display=swap');
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Cambria Math", Cambria, "Georgia", "Times New Roman", serif;
+  font-size: 18px;
+  line-height: 1.75;
+  color: #2a2a2a;
+  background: #fff;
+  padding: 2rem 1rem;
+}
+
+/* Layout */
+.layout {
+  display: flex;
+  gap: 2.5rem;
+  max-width: 980px;
+  margin: 0 auto;
+  align-items: flex-start;
+}
+
+/* Sidebar TOC */
+#toc-container {
+  width: 190px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 1.5rem;
+}
+
+.toc-title {
+  font-family: "Montserrat", sans-serif;
+  font-weight: 600;
+  color: #b07aa1;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.7rem;
+  margin-bottom: 0.5rem;
+}
+
+#toc-list {
+  list-style: none;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  font-family: "Montserrat", sans-serif;
+}
+
+#toc-list li {
+  margin: 0.3rem 0;
+}
+
+#toc-list li.h3 {
+  padding-left: 0.9rem;
+}
+
+#toc-list a {
+  color: #777;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+#toc-list a:hover {
+  color: #d4829c;
+}
+
+/* Main content */
+#content {
+  flex: 1;
+  min-width: 0;
+  max-width: 700px;
+}
+
+/* Typography */
+#content h1 {
+  font-family: "Montserrat", sans-serif;
+  font-size: 2.1rem;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-bottom: 0.6rem;
+  color: #b07aa1;
+}
+
+#content h2 {
+  font-family: "Montserrat", sans-serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin-top: 2.5rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid #e8dde5;
+  color: #4a3f4b;
+}
+
+#content h3 {
+  font-family: "Montserrat", sans-serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-top: 1.75rem;
+  margin-bottom: 0.5rem;
+  color: #5c4f5e;
+}
+
+#content p {
+  margin-bottom: 1rem;
+}
+
+#content ul,
+#content ol {
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+#content li {
+  margin-bottom: 0.25rem;
+}
+
+#content a {
+  color: #d4829c;
+  text-decoration: none;
+  border-bottom: 1px solid #f0c6d4;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+#content a:hover {
+  color: #c06a85;
+  border-bottom-color: #c06a85;
+}
+
+#content code {
+  font-family: "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.84em;
+  background: #faf5f8;
+  padding: 0.12em 0.38em;
+  border-radius: 3px;
+  color: #7b5e70;
+  border: 1px solid #f0e4ec;
+}
+
+#content pre {
+  background: #faf7f9;
+  border: 1px solid #ece3e9;
+  border-radius: 6px;
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  margin-bottom: 1.25rem;
+}
+
+#content pre code {
+  background: none;
+  padding: 0;
+  font-size: 0.84rem;
+  color: #2a2a2a;
+  border: none;
+}
+
+#content blockquote {
+  border-left: 3px solid #d4829c;
+  padding-left: 1rem;
+  color: #6b5c65;
+  margin: 1rem 0;
+  background: #fdf8fa;
+  padding: 0.6rem 1rem;
+  border-radius: 0 5px 5px 0;
+}
+
+/* KaTeX display math */
+#content .katex-display {
+  margin: 1.25rem 0;
+  padding: 0.8rem 0;
+  background: #fdfbfc;
+  border-radius: 4px;
+}
+
+/* Artifact iframes */
+.artifact-container {
+  margin: 1.5rem 0;
+}
+
+.artifact-container iframe {
+  width: 100%;
+  border: 1px solid #e8dde5;
+  border-radius: 6px;
+  display: block;
+  background: #fdfbfc;
+}
+
+/* Loading / error */
+.loading {
+  color: #b8a0b0;
+  font-style: italic;
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.9rem;
+}
+
+.error {
+  color: #c44d61;
+  background: #fdf2f4;
+  border: 1px solid #f5cdd4;
+  padding: 0.75rem 1rem;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  font-family: "Montserrat", sans-serif;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .layout {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  #toc-container {
+    width: 100%;
+    position: static;
+    border: 1px solid #e8dde5;
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    background: #fdfbfc;
+  }
+}

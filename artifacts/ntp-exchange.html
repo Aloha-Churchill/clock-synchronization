@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NTP Message Exchange</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --fg: #1a1a1a;
+    --fg-dim: #666;
+    --fg-faint: #999;
+    --bg: #ffffff;
+    --bg-sub: #f7f7f7;
+    --border: #e0e0e0;
+    --coral: #e05a33;
+    --coral-bg: #fdf0ec;
+    --purple: #5b4fc7;
+    --purple-bg: #eeecfb;
+    --teal: #0f7b60;
+    --teal-bg: #e6f5f0;
+    --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+    --font-mono: 'IBM Plex Mono', 'Menlo', monospace;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    color: var(--fg);
+    background: var(--bg);
+    line-height: 1.5;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 24px 16px;
+  }
+
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    padding: 6px 16px;
+    font-size: 13px;
+    font-family: var(--font-sans);
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--fg);
+    transition: background 0.15s;
+  }
+  .btn:hover { background: var(--bg-sub); }
+  .btn:disabled { opacity: 0.35; cursor: default; }
+  .btn-primary {
+    background: var(--fg);
+    color: var(--bg);
+    border-color: var(--fg);
+  }
+  .btn-primary:hover { background: #333; }
+
+  .delay-control {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--fg-dim);
+  }
+  .delay-control input[type=range] { width: 90px; }
+  .delay-control .val {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    min-width: 40px;
+  }
+
+  .main-layout {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+  }
+
+  .timeline-panel { flex: 1; min-width: 0; }
+
+  .sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 24px;
+  }
+
+  .formula-card {
+    background: var(--bg-sub);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .formula-card .label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--fg-faint);
+    margin-bottom: 8px;
+  }
+  .formula-card .value {
+    font-family: var(--font-mono);
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .formula-card .expr {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--fg-dim);
+    word-break: break-all;
+  }
+
+  .block-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 12px;
+  }
+  .block-bar {
+    height: 22px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    position: relative;
+    min-width: 20px;
+    transition: width 0.4s ease;
+  }
+  .block-bar.flight1 { background: var(--coral-bg); color: var(--coral); border: 1px solid var(--coral); }
+  .block-bar.server  { background: var(--teal-bg); color: var(--teal); border: 1px solid var(--teal); }
+  .block-bar.flight2 { background: var(--purple-bg); color: var(--purple); border: 1px solid var(--purple); }
+
+  .bar-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--fg-dim);
+  }
+  .legend-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+  }
+
+  .hint {
+    font-size: 13px;
+    color: var(--fg-faint);
+    text-align: center;
+    padding: 60px 0;
+  }
+
+  .ts-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+  }
+  .ts-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    background: var(--bg-sub);
+    border: 1px solid var(--border);
+  }
+  .ts-pill .ts-name { font-weight: 600; }
+
+  @media (max-width: 640px) {
+    .main-layout { flex-direction: column; }
+    .sidebar { width: 100%; position: static; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="controls">
+    <button class="btn btn-primary" id="ping-btn" onclick="sendPing()">Send NTP request</button>
+    <button class="btn" onclick="resetAll()">Reset</button>
+    <div class="delay-control">
+      <span>Delay</span>
+      <input type="range" id="delay-slider" min="10" max="200" value="60" step="5" oninput="updateDelay(this.value)">
+      <span class="val" id="delay-label">60 ms</span>
+    </div>
+  </div>
+
+  <div class="main-layout">
+    <div class="timeline-panel">
+      <svg id="ntp-svg" width="100%" viewBox="0 0 460 60">
+        <!-- Client / Server headers -->
+        <rect x="50" y="8" width="90" height="34" rx="6" fill="var(--bg-sub)" stroke="var(--border)" stroke-width="1"/>
+        <text x="95" y="29" text-anchor="middle" font-family="var(--font-sans)" font-size="13" font-weight="600" fill="var(--fg)">Client</text>
+
+        <rect x="320" y="8" width="90" height="34" rx="6" fill="var(--bg-sub)" stroke="var(--border)" stroke-width="1"/>
+        <text x="365" y="29" text-anchor="middle" font-family="var(--font-sans)" font-size="13" font-weight="600" fill="var(--fg)">Server</text>
+
+        <!-- Vertical timelines -->
+        <line x1="95" y1="48" x2="95" y2="56" stroke="var(--fg)" stroke-width="1" opacity="0.2" id="client-line"/>
+        <line x1="365" y1="48" x2="365" y2="56" stroke="var(--fg)" stroke-width="1" opacity="0.2" id="server-line"/>
+
+        <g id="ping-group"></g>
+      </svg>
+
+      <div id="empty-hint" class="hint">Click "Send NTP request" to begin</div>
+    </div>
+
+    <div class="sidebar" id="sidebar" style="display: none;">
+      <div class="formula-card">
+        <div class="label">Round-trip delay δ</div>
+        <div class="value" id="delay-val">—</div>
+        <div class="expr">δ = (t₃ − t₀) − (t₂ − t₁)</div>
+        <div class="block-stack" id="delay-stack"></div>
+      </div>
+
+      <div class="formula-card">
+        <div class="label">Clock offset θ</div>
+        <div class="value" id="offset-val">—</div>
+        <div class="expr">θ = ½[(t₁ − t₀) + (t₂ − t₃)]</div>
+      </div>
+
+      <div class="formula-card">
+        <div class="label">Timestamps</div>
+        <div class="ts-row" id="ts-row"></div>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--coral);"></div>Request flight</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--teal);"></div>Server processing</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--purple);"></div>Response flight</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let pingCount = 0;
+  let networkDelay = 60;
+  let serverOffset = Math.round((Math.random() * 160) - 80);
+  const maxPings = 5;
+
+  function updateDelay(v) {
+    networkDelay = parseInt(v);
+    document.getElementById('delay-label').textContent = v + ' ms';
+  }
+
+  function sendPing() {
+    if (pingCount >= maxPings) return;
+
+    document.getElementById('empty-hint').style.display = 'none';
+    document.getElementById('sidebar').style.display = 'block';
+
+    const now = Date.now();
+    const jitter1 = Math.round((Math.random() - 0.3) * networkDelay * 0.4);
+    const jitter2 = Math.round((Math.random() - 0.3) * networkDelay * 0.4);
+    const serverProc = Math.round(5 + Math.random() * 15);
+
+    const t0 = now;
+    const flight1 = networkDelay + jitter1;
+    const t1 = t0 + flight1 + serverOffset;
+    const t2 = t1 + serverProc;
+    const flight2 = networkDelay + jitter2;
+    const t3 = t0 + flight1 + serverProc + flight2;
+
+    const yBase = 60 + pingCount * 140;
+    const svg = document.getElementById('ntp-svg');
+    const g = document.getElementById('ping-group');
+
+    // Extend timelines
+    const newH = yBase + 150;
+    svg.setAttribute('viewBox', `0 0 460 ${newH}`);
+    document.getElementById('client-line').setAttribute('y2', newH - 10);
+    document.getElementById('server-line').setAttribute('y2', newH - 10);
+
+    // Arrow scaling
+    const arrowLen = 120; // vertical span for each arrow
+
+    const y0 = yBase + 10;
+    const y1 = y0 + arrowLen * (flight1 / (flight1 + serverProc + flight2));
+    const procEnd = y1 + arrowLen * (serverProc / (flight1 + serverProc + flight2));
+    const y3 = y0 + arrowLen;
+
+    const cX = 95;
+    const sX = 365;
+
+    // Shaded flight regions
+    // Flight 1 (coral)
+    const f1Path = `M${cX},${y0} L${sX},${y1} L${sX},${y1} L${cX},${y0}`;
+    const f1Poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    f1Poly.setAttribute('points', `${cX},${y0} ${sX},${y1} ${sX},${y1+2} ${cX},${y0+2}`);
+    f1Poly.setAttribute('fill', 'var(--coral)');
+    f1Poly.setAttribute('opacity', '0.12');
+
+    // Flight 2 (purple)
+    const f2Poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    f2Poly.setAttribute('points', `${sX},${procEnd} ${cX},${y3} ${cX},${y3+2} ${sX},${procEnd+2}`);
+    f2Poly.setAttribute('fill', 'var(--purple)');
+    f2Poly.setAttribute('opacity', '0.12');
+
+    // Server processing (teal bar on server line)
+    const procRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    procRect.setAttribute('x', sX - 4);
+    procRect.setAttribute('y', y1);
+    procRect.setAttribute('width', 8);
+    procRect.setAttribute('height', procEnd - y1);
+    procRect.setAttribute('rx', 2);
+    procRect.setAttribute('fill', 'var(--teal)');
+    procRect.setAttribute('opacity', '0.3');
+
+    // Request arrow (coral)
+    const arr1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    arr1.setAttribute('x1', cX); arr1.setAttribute('y1', y0);
+    arr1.setAttribute('x2', sX); arr1.setAttribute('y2', y1);
+    arr1.setAttribute('stroke', 'var(--coral)');
+    arr1.setAttribute('stroke-width', '1.5');
+    arr1.setAttribute('marker-end', 'url(#arrowhead-coral)');
+
+    // Response arrow (purple)
+    const arr2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    arr2.setAttribute('x1', sX); arr2.setAttribute('y1', procEnd);
+    arr2.setAttribute('x2', cX); arr2.setAttribute('y2', y3);
+    arr2.setAttribute('stroke', 'var(--purple)');
+    arr2.setAttribute('stroke-width', '1.5');
+    arr2.setAttribute('marker-end', 'url(#arrowhead-purple)');
+
+    // Timestamp labels
+    function makeTs(x, y, label, val, anchor, color) {
+      const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      txt.setAttribute('x', x); txt.setAttribute('y', y);
+      txt.setAttribute('text-anchor', anchor);
+      txt.setAttribute('font-family', 'var(--font-mono)');
+      txt.setAttribute('font-size', '11');
+      txt.setAttribute('fill', color || 'var(--fg-dim)');
+      txt.textContent = label;
+      return txt;
+    }
+
+    g.appendChild(f1Poly);
+    g.appendChild(f2Poly);
+    g.appendChild(procRect);
+    g.appendChild(arr1);
+    g.appendChild(arr2);
+
+    // Timestamp dots & labels
+    function makeDot(cx, cy, color) {
+      const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      c.setAttribute('cx', cx); c.setAttribute('cy', cy);
+      c.setAttribute('r', 3.5);
+      c.setAttribute('fill', color);
+      return c;
+    }
+
+    g.appendChild(makeDot(cX, y0, 'var(--coral)'));
+    g.appendChild(makeTs(cX - 12, y0 + 1, `t₀`, null, 'end', 'var(--coral)'));
+
+    g.appendChild(makeDot(sX, y1, 'var(--coral)'));
+    g.appendChild(makeTs(sX + 12, y1 + 1, `t₁`, null, 'start', 'var(--teal)'));
+
+    g.appendChild(makeDot(sX, procEnd, 'var(--purple)'));
+    g.appendChild(makeTs(sX + 12, procEnd + 1, `t₂`, null, 'start', 'var(--teal)'));
+
+    g.appendChild(makeDot(cX, y3, 'var(--purple)'));
+    g.appendChild(makeTs(cX - 12, y3 + 1, `t₃`, null, 'end', 'var(--purple)'));
+
+    // Flight labels on arrows
+    const midReqY = (y0 + y1) / 2;
+    const midReqX = (cX + sX) / 2;
+    g.appendChild(makeTs(midReqX, midReqY - 6, `${flight1} ms`, null, 'middle', 'var(--coral)'));
+
+    const midResY = (procEnd + y3) / 2;
+    const midResX = (sX + cX) / 2;
+    g.appendChild(makeTs(midResX, midResY - 6, `${flight2} ms`, null, 'middle', 'var(--purple)'));
+
+    // Server proc label
+    const midProcY = (y1 + procEnd) / 2;
+    g.appendChild(makeTs(sX + 16, midProcY + 4, `${serverProc} ms`, null, 'start', 'var(--teal)'));
+
+    // Ensure arrow markers exist
+    ensureMarkers();
+
+    // Update sidebar
+    const delta = (t3 - t0) - (t2 - t1);
+    const theta = ((t1 - t0) + (t2 - t3)) / 2;
+
+    document.getElementById('delay-val').textContent = delta + ' ms';
+    document.getElementById('offset-val').textContent = (theta >= 0 ? '+' : '') + Math.round(theta) + ' ms';
+
+    // Build block stack
+    const totalBar = flight1 + serverProc + flight2;
+    const maxBarW = 180;
+    const stack = document.getElementById('delay-stack');
+    stack.innerHTML = `
+      <div class="block-bar flight1" style="width:${Math.max(30, flight1/totalBar*maxBarW)}px">
+        <span class="bar-label">↑ ${flight1} ms</span>
+      </div>
+      <div class="block-bar server" style="width:${Math.max(30, serverProc/totalBar*maxBarW)}px">
+        <span class="bar-label">⏱ ${serverProc} ms</span>
+      </div>
+      <div class="block-bar flight2" style="width:${Math.max(30, flight2/totalBar*maxBarW)}px">
+        <span class="bar-label">↓ ${flight2} ms</span>
+      </div>
+    `;
+
+    // Timestamps
+    const tsRow = document.getElementById('ts-row');
+    tsRow.innerHTML = `
+      <div class="ts-pill"><span class="ts-name" style="color:var(--coral)">t₀</span> ${t0 % 100000}</div>
+      <div class="ts-pill"><span class="ts-name" style="color:var(--teal)">t₁</span> ${t1 % 100000}</div>
+      <div class="ts-pill"><span class="ts-name" style="color:var(--teal)">t₂</span> ${t2 % 100000}</div>
+      <div class="ts-pill"><span class="ts-name" style="color:var(--purple)">t₃</span> ${t3 % 100000}</div>
+    `;
+
+    pingCount++;
+    if (pingCount >= maxPings) {
+      document.getElementById('ping-btn').disabled = true;
+    }
+  }
+
+  function ensureMarkers() {
+    const svg = document.getElementById('ntp-svg');
+    if (svg.querySelector('#arrowhead-coral')) return;
+
+    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+
+    function makeMarker(id, color) {
+      const m = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+      m.setAttribute('id', id);
+      m.setAttribute('viewBox', '0 0 10 10');
+      m.setAttribute('refX', '9');
+      m.setAttribute('refY', '5');
+      m.setAttribute('markerWidth', '6');
+      m.setAttribute('markerHeight', '6');
+      m.setAttribute('orient', 'auto-start-reverse');
+      const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      p.setAttribute('d', 'M2 2L8 5L2 8');
+      p.setAttribute('fill', 'none');
+      p.setAttribute('stroke', color);
+      p.setAttribute('stroke-width', '1.5');
+      p.setAttribute('stroke-linecap', 'round');
+      p.setAttribute('stroke-linejoin', 'round');
+      m.appendChild(p);
+      return m;
+    }
+
+    defs.appendChild(makeMarker('arrowhead-coral', 'var(--coral)'));
+    defs.appendChild(makeMarker('arrowhead-purple', 'var(--purple)'));
+    svg.insertBefore(defs, svg.firstChild);
+  }
+
+  function resetAll() {
+    pingCount = 0;
+    serverOffset = Math.round((Math.random() * 160) - 80);
+
+    document.getElementById('ping-group').innerHTML = '';
+    document.getElementById('empty-hint').style.display = 'block';
+    document.getElementById('sidebar').style.display = 'none';
+    document.getElementById('ping-btn').disabled = false;
+
+    const svg = document.getElementById('ntp-svg');
+    svg.setAttribute('viewBox', '0 0 460 60');
+    document.getElementById('client-line').setAttribute('y2', '56');
+    document.getElementById('server-line').setAttribute('y2', '56');
+  }
+</script>
+</body>
+</html>
