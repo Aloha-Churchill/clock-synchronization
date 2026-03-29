@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NTP Stratum Hierarchy</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: "Cambria Math", Cambria, Georgia, serif;
+    color: #2a2a2a;
+    background: #fff;
+    font-size: 17px;
+    line-height: 1.65;
+  }
+
+  .container {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 36px 20px 48px;
+  }
+
+  h1 {
+    font-family: "Montserrat", sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: #1a1a1a;
+  }
+
+  .intro {
+    font-size: 0.88rem;
+    color: #888;
+    margin-bottom: 32px;
+  }
+
+  .hierarchy {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* ── Clickable stratum row ── */
+  .stratum-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    padding: 14px 16px;
+    border-radius: 10px;
+    transition: background 0.15s;
+  }
+
+  .stratum-row:hover { background: #fafafa; }
+  .stratum-row.active { background: #fdfbfc; }
+
+  .stratum-label {
+    font-family: "Montserrat", sans-serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 10px;
+    transition: opacity 0.15s;
+  }
+
+  .nodes {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+    pointer-events: none;
+  }
+
+  .node-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid;
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+
+  .node-name {
+    font-family: "Montserrat", sans-serif;
+    font-size: 0.56rem;
+    font-weight: 500;
+    color: #aaa;
+    text-align: center;
+    max-width: 64px;
+    line-height: 1.3;
+    margin-top: 4px;
+  }
+
+  .node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Active state — glow all nodes */
+  .stratum-row.active .node-icon {
+    box-shadow: 0 0 0 4px rgba(0,0,0,0.05);
+    transform: scale(1.04);
+  }
+
+  /* ── Connectors ── */
+  .connectors {
+    width: 100%;
+    height: 24px;
+  }
+  .connectors svg { width: 100%; height: 100%; }
+
+  /* ── Stratum colors ── */
+  .s0 .stratum-label { color: #c0512d; }
+  .s0 .node-icon { background: #fdf0ec; border-color: #d4714a; color: #c0512d; }
+  .s0.active .node-icon { box-shadow: 0 0 0 5px rgba(192,81,45,0.1); }
+
+  .s1 .stratum-label { color: #b07aa1; }
+  .s1 .node-icon { background: #faf2f7; border-color: #c494b5; color: #9a6590; }
+  .s1.active .node-icon { box-shadow: 0 0 0 5px rgba(176,122,161,0.12); }
+
+  .s2 .stratum-label { color: #d4a04a; }
+  .s2 .node-icon { background: #fef8ee; border-color: #ddb85e; color: #b8862e; }
+  .s2.active .node-icon { box-shadow: 0 0 0 5px rgba(212,160,74,0.12); }
+
+  .s3 .stratum-label { color: #3cb371; }
+  .s3 .node-icon { background: #f0faf2; border-color: #6dc990; color: #2d8a57; }
+  .s3.active .node-icon { box-shadow: 0 0 0 5px rgba(60,179,113,0.12); }
+
+  .more-dots {
+    font-family: "Montserrat", sans-serif;
+    font-size: 0.7rem;
+    color: #ccc;
+    letter-spacing: 0.2em;
+    margin-top: 6px;
+  }
+
+  /* ── Info panel ── */
+  .info-panel {
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 0.35s ease, opacity 0.25s ease, margin 0.3s ease, padding 0.3s ease;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: #fdfbfc;
+    margin: 0 0;
+    padding: 0 24px;
+  }
+
+  .info-panel.show {
+    max-height: 200px;
+    opacity: 1;
+    margin: 8px 0 4px;
+    padding: 18px 24px;
+    border-color: #e8dde5;
+  }
+
+  .info-panel .info-stratum {
+    font-family: "Montserrat", sans-serif;
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+  }
+
+  .info-panel .info-title {
+    font-family: "Montserrat", sans-serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #2a2a2a;
+    margin-bottom: 8px;
+  }
+
+  .info-panel .info-body {
+    font-size: 0.88rem;
+    color: #777;
+    line-height: 1.6;
+  }
+
+  .hint {
+    text-align: center;
+    font-size: 0.82rem;
+    color: #c0b0b8;
+    margin-top: 20px;
+    font-style: italic;
+  }
+
+  @media (max-width: 500px) {
+    .node-icon { width: 40px; height: 40px; }
+    .nodes { gap: 8px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>NTP Stratum Hierarchy</h1>
+  <p class="intro">Time flows downward, from reference clocks to your machine. Click any layer to learn more.</p>
+
+  <div class="hierarchy">
+
+    <!-- Stratum 0 -->
+    <div class="stratum-row s0" onclick="toggle(0)">
+      <div class="stratum-label">Stratum 0: Reference Clocks</div>
+      <div class="nodes">
+        <div class="node">
+          <div class="node-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <circle cx="12" cy="12" r="4" fill="currentColor" opacity="0.15"/>
+              <circle cx="12" cy="12" r="2" fill="currentColor" opacity="0.4"/>
+              <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(-30 12 12)"/>
+              <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(30 12 12)"/>
+              <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(90 12 12)"/>
+            </svg>
+          </div>
+          <div class="node-name">Atomic Clock</div>
+        </div>
+        <div class="node">
+          <div class="node-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <circle cx="12" cy="8" r="5"/>
+              <path d="M7 8 L4 16 L20 16 L17 8"/>
+              <line x1="12" y1="3" x2="12" y2="1"/>
+              <line x1="12" y1="15" x2="12" y2="18"/>
+            </svg>
+          </div>
+          <div class="node-name">GPS Receiver</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-panel" id="panel-0">
+      <div class="info-stratum" style="color:#c0512d;">Stratum 0</div>
+      <div class="info-title">Reference Clocks</div>
+      <div class="info-body">These are the ultimate authorities of time. Stratum 0 devices are high-precision timekeeping instruments such as Atomic Clocks, GPS satellites, or Radio Clocks. They do not sit on a network; instead, they are physically attached to a computer via a specialized interface. Because they provide the raw "true" time, they are the foundation upon which the entire system is built.</div>
+    </div>
+
+    <!-- Connectors 0→1 -->
+    <div class="connectors">
+      <svg viewBox="0 0 700 24" preserveAspectRatio="none">
+        <line x1="310" y1="0" x2="230" y2="24" stroke="#e0d0da" stroke-width="1.5"/>
+        <line x1="390" y1="0" x2="350" y2="24" stroke="#e0d0da" stroke-width="1.5"/>
+        <line x1="310" y1="0" x2="350" y2="24" stroke="#e0d0da" stroke-width="1.5"/>
+        <line x1="390" y1="0" x2="470" y2="24" stroke="#e0d0da" stroke-width="1.5"/>
+      </svg>
+    </div>
+
+    <!-- Stratum 1 -->
+    <div class="stratum-row s1" onclick="toggle(1)">
+      <div class="stratum-label">Stratum 1: Primary Servers</div>
+      <div class="nodes">
+        <div class="node">
+          <div class="node-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <rect x="4" y="4" width="16" height="6" rx="1.5"/>
+              <rect x="4" y="14" width="16" height="6" rx="1.5"/>
+              <circle cx="7" cy="7" r="1" fill="currentColor"/>
+              <circle cx="7" cy="17" r="1" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="node-name">time.nist.gov</div>
+        </div>
+        <div class="node">
+          <div class="node-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <rect x="4" y="4" width="16" height="6" rx="1.5"/>
+              <rect x="4" y="14" width="16" height="6" rx="1.5"/>
+              <circle cx="7" cy="7" r="1" fill="currentColor"/>
+              <circle cx="7" cy="17" r="1" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="node-name">ptb.de</div>
+        </div>
+        <div class="node">
+          <div class="node-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <rect x="4" y="4" width="16" height="6" rx="1.5"/>
+              <rect x="4" y="14" width="16" height="6" rx="1.5"/>
+              <circle cx="7" cy="7" r="1" fill="currentColor"/>
+              <circle cx="7" cy="17" r="1" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="node-name">ntp.org pool</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-panel" id="panel-1">
+      <div class="info-stratum" style="color:#9a6590;">Stratum 1</div>
+      <div class="info-title">Primary Time Servers</div>
+      <div class="info-body">A computer directly connected to a Stratum 0 reference clock. These act as the primary gateways between the physical time source and the network. They are often referred to as Primary Time Servers. Their sole job is to act as a highly accurate buffer, taking the pulse from the atomic clock and making it available to other computers over the internet.</div>
+    </div>
+
+    <!-- Connectors 1→2 -->
+    <div class="connectors">
+      <svg viewBox="0 0 700 24" preserveAspectRatio="none">
+        <line x1="230" y1="0" x2="150" y2="24" stroke="#e0d0da" stroke-width="1.2"/>
+        <line x1="230" y1="0" x2="250" y2="24" stroke="#e0d0da" stroke-width="1.2"/>
+        <line x1="350" y1="0" x2="300" y2="24" stroke="#e0d0da" stroke-width="1.2"/>
+        <line x1="350" y1="0" x2="400" y2="24" stroke="#e0d0da" stroke-width="1.2"/>
+        <line x1="470" y1="0" x2="450" y2="24" stroke="#e0d0da" stroke-width="1.2"/>
+        <line x1="470" y1="0" x2="550" y2="24" stroke="#e0d0da" stroke-width="1.2"/>
+      </svg>
+    </div>
+
+    <!-- Stratum 2 -->
+    <div class="stratum-row s2" onclick="toggle(2)">
+      <div class="stratum-label">Stratum 2: Secondary Servers</div>
+      <div class="nodes">
+        <div class="node">
+          <div class="node-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <rect x="5" y="6" width="14" height="12" rx="1.5"/>
+              <line x1="5" y1="10" x2="19" y2="10"/>
+              <circle cx="8" cy="8" r="0.8" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="node-name">ISP server</div>
+        </div>
+        <div class="node">
+          <div class="node-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <rect x="5" y="6" width="14" height="12" rx="1.5"/>
+              <line x1="5" y1="10" x2="19" y2="10"/>
+              <circle cx="8" cy="8" r="0.8" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="node-name">University</div>
+        </div>
+        <div class="node">
+          <div class="node-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <rect x="5" y="6" width="14" height="12" rx="1.5"/>
+              <line x1="5" y1="10" x2="19" y2="10"/>
+              <circle cx="8" cy="8" r="0.8" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="node-name">Corp. DC</div>
+        </div>
+        <div class="node">
+          <div class="node-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <rect x="5" y="6" width="14" height="12" rx="1.5"/>
+              <line x1="5" y1="10" x2="19" y2="10"/>
+              <circle cx="8" cy="8" r="0.8" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="node-name">Cloud NTP</div>
+        </div>
+        <div class="node">
+          <div class="node-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <rect x="5" y="6" width="14" height="12" rx="1.5"/>
+              <line x1="5" y1="10" x2="19" y2="10"/>
+              <circle cx="8" cy="8" r="0.8" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="node-name">CDN edge</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-panel" id="panel-2">
+      <div class="info-stratum" style="color:#b8862e;">Stratum 2</div>
+      <div class="info-title">Secondary Time Servers</div>
+      <div class="info-body">These servers synchronize their time by requesting it from Stratum 1 servers. While there is a microscopic delay (jitter) introduced by the network connection, Stratum 2 servers are still incredibly accurate. They serve as a distribution layer, sharing the load so that thousands of devices don't overwhelm the handful of Primary servers. Most public NTP pools used by organizations are located at this level.</div>
+    </div>
+
+    <!-- Connectors 2→3 -->
+    <div class="connectors">
+      <svg viewBox="0 0 700 24" preserveAspectRatio="none">
+        <line x1="150" y1="0" x2="80" y2="24" stroke="#e0d0da" stroke-width="1"/>
+        <line x1="150" y1="0" x2="140" y2="24" stroke="#e0d0da" stroke-width="1"/>
+        <line x1="250" y1="0" x2="200" y2="24" stroke="#e0d0da" stroke-width="1"/>
+        <line x1="250" y1="0" x2="260" y2="24" stroke="#e0d0da" stroke-width="1"/>
+        <line x1="350" y1="0" x2="320" y2="24" stroke="#e0d0da" stroke-width="1"/>
+        <line x1="350" y1="0" x2="380" y2="24" stroke="#e0d0da" stroke-width="1"/>
+        <line x1="450" y1="0" x2="440" y2="24" stroke="#e0d0da" stroke-width="1"/>
+        <line x1="450" y1="0" x2="500" y2="24" stroke="#e0d0da" stroke-width="1"/>
+        <line x1="550" y1="0" x2="560" y2="24" stroke="#e0d0da" stroke-width="1"/>
+        <line x1="550" y1="0" x2="620" y2="24" stroke="#e0d0da" stroke-width="1"/>
+      </svg>
+    </div>
+
+    <!-- Stratum 3+ -->
+    <div class="stratum-row s3" onclick="toggle(3)">
+      <div class="stratum-label">Stratum 3+ : End Devices</div>
+      <div class="nodes">
+        <div class="node">
+          <div class="node-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <rect x="3" y="4" width="18" height="12" rx="1.5"/>
+              <line x1="8" y1="20" x2="16" y2="20"/>
+              <line x1="12" y1="16" x2="12" y2="20"/>
+            </svg>
+          </div>
+          <div class="node-name">Desktop</div>
+        </div>
+        <div class="node">
+          <div class="node-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <rect x="6" y="3" width="12" height="18" rx="2"/>
+              <line x1="10" y1="18" x2="14" y2="18"/>
+            </svg>
+          </div>
+          <div class="node-name">Phone</div>
+        </div>
+        <div class="node">
+          <div class="node-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <rect x="3" y="4" width="18" height="12" rx="1.5"/>
+              <line x1="8" y1="20" x2="16" y2="20"/>
+              <line x1="12" y1="16" x2="12" y2="20"/>
+            </svg>
+          </div>
+          <div class="node-name">Laptop</div>
+        </div>
+        <div class="node">
+          <div class="node-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <rect x="5" y="6" width="14" height="12" rx="1.5"/>
+              <line x1="5" y1="10" x2="19" y2="10"/>
+              <circle cx="8" cy="8" r="0.8" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="node-name">VM</div>
+        </div>
+        <div class="node">
+          <div class="node-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <circle cx="12" cy="12" r="5"/>
+              <line x1="12" y1="7" x2="12" y2="12"/>
+              <line x1="12" y1="12" x2="15" y2="14"/>
+            </svg>
+          </div>
+          <div class="node-name">IoT sensor</div>
+        </div>
+        <div class="node">
+          <div class="node-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <rect x="3" y="4" width="18" height="12" rx="1.5"/>
+              <line x1="8" y1="20" x2="16" y2="20"/>
+              <line x1="12" y1="16" x2="12" y2="20"/>
+            </svg>
+          </div>
+          <div class="node-name">Kiosk</div>
+        </div>
+        <div class="node">
+          <div class="node-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <rect x="5" y="6" width="14" height="12" rx="1.5"/>
+              <line x1="5" y1="10" x2="19" y2="10"/>
+              <circle cx="8" cy="8" r="0.8" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="node-name">Container</div>
+        </div>
+        <div class="node">
+          <div class="node-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <rect x="6" y="3" width="12" height="18" rx="2"/>
+              <line x1="10" y1="18" x2="14" y2="18"/>
+            </svg>
+          </div>
+          <div class="node-name">Tablet</div>
+        </div>
+      </div>
+      <div class="more-dots">· · · · · ·</div>
+    </div>
+
+    <div class="info-panel" id="panel-3">
+      <div class="info-stratum" style="color:#2d8a57;">Stratum 3+</div>
+      <div class="info-title">End Devices</div>
+      <div class="info-body">End users such as your laptop, smartphone, or smart thermostat usually sit at Stratum 3 or 4. By the time the signal reaches your device, it has traveled through a few hops, but the synchronization remains accurate within milliseconds. This is more than enough precision to ensure your emails are timestamped correctly and your calendar alerts go off right on time.</div>
+    </div>
+
+  </div>
+
+  <p class="hint" id="hint">Click any layer to see details</p>
+</div>
+
+<script>
+let activePanel = null;
+
+function toggle(stratum) {
+  const rows = document.querySelectorAll('.stratum-row');
+  const panel = document.getElementById(`panel-${stratum}`);
+
+  if (activePanel === stratum) {
+    // Close
+    panel.classList.remove('show');
+    rows[stratum].classList.remove('active');
+    activePanel = null;
+    document.getElementById('hint').style.display = '';
+    return;
+  }
+
+  // Close previous
+  if (activePanel !== null) {
+    document.getElementById(`panel-${activePanel}`).classList.remove('show');
+    rows[activePanel].classList.remove('active');
+  }
+
+  // Open new
+  panel.classList.add('show');
+  rows[stratum].classList.add('active');
+  activePanel = stratum;
+  document.getElementById('hint').style.display = 'none';
+}
+</script>
+</body>
+</html>

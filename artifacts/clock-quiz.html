@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clock Quiz</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: "Cambria Math", Cambria, Georgia, serif;
+    color: #2a2a2a;
+    background: #fff;
+    font-size: 17px;
+    line-height: 1.65;
+  }
+
+  .quiz {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 36px 24px 48px;
+  }
+
+  .quiz-title {
+    font-family: "Montserrat", sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: #1a1a1a;
+  }
+
+  .quiz-intro {
+    font-size: 0.92rem;
+    color: #777;
+    margin-bottom: 32px;
+    line-height: 1.55;
+  }
+
+  .quiz-intro code {
+    font-family: "IBM Plex Mono", Menlo, monospace;
+    font-size: 0.84em;
+    background: #faf5f8;
+    padding: 1px 6px;
+    border-radius: 3px;
+    color: #7b5e70;
+    border: 1px solid #f0e4ec;
+  }
+
+  /* ── Scenario card ── */
+  .scenario {
+    border: 1px solid #e8dde5;
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 20px;
+    transition: border-color 0.3s;
+  }
+
+  .scenario-num {
+    font-family: "Montserrat", sans-serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #b8a0b0;
+    margin-bottom: 6px;
+  }
+
+  .scenario-question {
+    font-size: 1rem;
+    margin-bottom: 16px;
+    color: #2a2a2a;
+    line-height: 1.55;
+  }
+
+  .choices {
+    display: flex;
+    gap: 10px;
+  }
+
+  .choice-btn {
+    flex: 1;
+    padding: 10px 16px;
+    border: 2px solid #e0d5dc;
+    border-radius: 7px;
+    background: #fdfbfc;
+    cursor: pointer;
+    font-family: "IBM Plex Mono", Menlo, monospace;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #5c4f5e;
+    text-align: center;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+    line-height: 1.4;
+  }
+
+  .choice-btn:hover:not(.locked) {
+    border-color: #d4829c;
+    background: #fdf2f5;
+    transform: translateY(-1px);
+  }
+
+  .choice-btn.locked {
+    cursor: default;
+    opacity: 0.5;
+  }
+
+  .choice-btn.correct {
+    border-color: #3cb371;
+    background: #eef8f0;
+    color: #2d7a4a;
+    opacity: 1;
+  }
+
+  .choice-btn.wrong {
+    border-color: #d9534f;
+    background: #fef2f2;
+    color: #a33;
+    opacity: 1;
+  }
+
+  /* ── Feedback ── */
+  .feedback {
+    margin-top: 14px;
+    padding: 14px 16px;
+    border-radius: 6px;
+    font-size: 0.88rem;
+    line-height: 1.55;
+    display: none;
+  }
+
+  .feedback.show { display: block; }
+
+  .feedback.correct-fb {
+    background: #f0faf2;
+    border: 1px solid #c8e6cf;
+    color: #2d6b42;
+  }
+
+  .feedback.wrong-fb {
+    background: #fef6f5;
+    border: 1px solid #f0ccc8;
+    color: #8b3a35;
+  }
+
+  .feedback strong {
+    font-weight: 600;
+  }
+
+  /* ── Score ── */
+  .score-bar {
+    margin-top: 12px;
+    padding: 20px 24px;
+    background: #fdfbfc;
+    border: 1px solid #e8dde5;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .score-text {
+    font-family: "Montserrat", sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #4a3f4b;
+  }
+
+  .score-count {
+    font-family: "IBM Plex Mono", Menlo, monospace;
+    font-size: 1.3rem;
+    font-weight: 500;
+    color: #d4829c;
+  }
+
+  .reset-btn {
+    font-family: "Montserrat", sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 6px 16px;
+    border: 1px solid #e0d5dc;
+    border-radius: 5px;
+    background: #fff;
+    color: #888;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .reset-btn:hover {
+    background: #fdf2f5;
+    color: #d4829c;
+  }
+</style>
+</head>
+<body>
+<div class="quiz">
+  <div class="quiz-title">Intuition Check: Which Clock?</div>
+  <div class="quiz-intro">
+    For each scenario, decide: should you use <code>CLOCK_REALTIME</code> (the wall clock that tracks UTC, adjustable by NTP) or <code>CLOCK_MONOTONIC</code> (the steady counter that only goes forward)?
+  </div>
+
+  <div id="scenarios"></div>
+
+  <div class="score-bar">
+    <div>
+      <div class="score-text">Score</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px;">
+      <div class="score-count"><span id="score">0</span> / <span id="total">0</span></div>
+      <button class="reset-btn" onclick="resetQuiz()">Reset</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const questions = [
+  {
+    scenario: "You're measuring how long a database query takes to execute so you can log performance metrics.",
+    answer: "CLOCK_MONOTONIC",
+    explain_right: "You need elapsed time that can't be thrown off by an NTP adjustment mid-measurement. CLOCK_MONOTONIC only moves forward at a steady rate.",
+    explain_wrong: "CLOCK_REALTIME could jump forward or backward during your measurement if NTP corrects the clock, giving you a negative or wildly wrong duration."
+  },
+  {
+    scenario: "Your application needs to stamp a log entry with the current date and time so operators can correlate it with events on other machines.",
+    answer: "CLOCK_REALTIME",
+    explain_right: "Log timestamps need to be in UTC so humans and other systems can make sense of them. That's exactly what CLOCK_REALTIME provides.",
+    explain_wrong: "CLOCK_MONOTONIC starts at 0 on boot — it tells you nothing about what time it actually is. You'd get meaningless numbers in your logs."
+  },
+  {
+    scenario: "You're implementing a timeout: if no response arrives within 5 seconds, retry the request.",
+    answer: "CLOCK_MONOTONIC",
+    explain_right: "Timeouts measure elapsed duration. CLOCK_MONOTONIC guarantees that 5 seconds of ticks is always 5 seconds — no NTP surprises.",
+    explain_wrong: "If NTP steps the clock back by 3 seconds during your wait, CLOCK_REALTIME could make your 5-second timeout last 8 real seconds."
+  },
+  {
+    scenario: "A TLS certificate has a \"not before\" and \"not after\" field. Your code needs to check if the certificate is currently valid.",
+    answer: "CLOCK_REALTIME",
+    explain_right: "Certificate validity is defined in terms of calendar dates (UTC). You need the actual wall-clock time to compare against those dates.",
+    explain_wrong: "CLOCK_MONOTONIC has no concept of calendar time. It can't tell you whether today is before or after March 15, 2026."
+  },
+  {
+    scenario: "You're building a game loop that needs to compute the time delta between frames to keep animation speed consistent.",
+    answer: "CLOCK_MONOTONIC",
+    explain_right: "Frame deltas must be smooth and monotonic. A clock that can jump due to NTP would cause animation glitches — objects teleporting or freezing.",
+    explain_wrong: "An NTP correction during gameplay could produce a negative delta or a huge spike, breaking your physics and rendering."
+  },
+  {
+    scenario: "Your distributed database assigns a timestamp to each write so that \"last write wins\" during conflict resolution across replicas.",
+    answer: "CLOCK_REALTIME",
+    explain_right: "Cross-machine ordering by time requires a shared reference frame — UTC via CLOCK_REALTIME. It's imperfect (NTP has bounded error), but CLOCK_MONOTONIC is purely local and incomparable across machines.",
+    explain_wrong: "CLOCK_MONOTONIC is local to each machine and starts at boot. Machine A's monotonic time 500,000 has zero relation to Machine B's 500,000. You can't compare them."
+  }
+];
+
+let answered = 0;
+let correct = 0;
+
+function render() {
+  const container = document.getElementById('scenarios');
+  container.innerHTML = '';
+
+  questions.forEach((q, i) => {
+    const div = document.createElement('div');
+    div.className = 'scenario';
+    div.id = `scenario-${i}`;
+    div.innerHTML = `
+      <div class="scenario-num">Scenario ${i + 1}</div>
+      <div class="scenario-question">${q.scenario}</div>
+      <div class="choices">
+        <button class="choice-btn" onclick="choose(${i}, 'CLOCK_REALTIME', this)" id="s${i}-realtime">CLOCK_REALTIME</button>
+        <button class="choice-btn" onclick="choose(${i}, 'CLOCK_MONOTONIC', this)" id="s${i}-monotonic">CLOCK_MONOTONIC</button>
+      </div>
+      <div class="feedback" id="fb-${i}"></div>
+    `;
+    container.appendChild(div);
+  });
+
+  document.getElementById('total').textContent = questions.length;
+  document.getElementById('score').textContent = '0';
+}
+
+function choose(idx, choice, btn) {
+  const q = questions[idx];
+  const rt = document.getElementById(`s${idx}-realtime`);
+  const mt = document.getElementById(`s${idx}-monotonic`);
+  const fb = document.getElementById(`fb-${idx}`);
+  const card = document.getElementById(`scenario-${idx}`);
+
+  // Already answered
+  if (rt.classList.contains('locked')) return;
+
+  // Lock both buttons
+  rt.classList.add('locked');
+  mt.classList.add('locked');
+
+  const isCorrect = choice === q.answer;
+
+  if (isCorrect) {
+    btn.classList.add('correct');
+    fb.className = 'feedback correct-fb show';
+    fb.innerHTML = `<strong>Correct!</strong> ${q.explain_right}`;
+    correct++;
+    card.style.borderColor = '#c8e6cf';
+  } else {
+    btn.classList.add('wrong');
+    // Highlight the correct one
+    if (q.answer === 'CLOCK_REALTIME') rt.classList.add('correct');
+    else mt.classList.add('correct');
+    fb.className = 'feedback wrong-fb show';
+    fb.innerHTML = `<strong>Not quite.</strong> ${q.explain_wrong}`;
+    card.style.borderColor = '#f0ccc8';
+  }
+
+  answered++;
+  document.getElementById('score').textContent = correct;
+}
+
+function resetQuiz() {
+  answered = 0;
+  correct = 0;
+  render();
+}
+
+render();
+</script>
+</body>
+</html>

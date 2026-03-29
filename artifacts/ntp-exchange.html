@@ -1,212 +1,140 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NTP Message Exchange</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NTP Message Exchange</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  :root {
-    --fg: #1a1a1a;
-    --fg-dim: #666;
-    --fg-faint: #999;
-    --bg: #ffffff;
-    --bg-sub: #f7f7f7;
-    --border: #e0e0e0;
-    --coral: #e05a33;
-    --coral-bg: #fdf0ec;
-    --purple: #5b4fc7;
-    --purple-bg: #eeecfb;
-    --teal: #0f7b60;
-    --teal-bg: #e6f5f0;
-    --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
-    --font-mono: 'IBM Plex Mono', 'Menlo', monospace;
-  }
+    :root {
+      --fg: #2c2418;
+      --fg-dim: #6b5d4d;
+      --fg-faint: #a89a88;
+      --bg: #fdfbfc;
+      --bg-sub: #faf7f9;
+      --border: #d4c5a9;
+      --coral: #c0512d;
+      --coral-bg: #f5ede7;
+      --purple: #5b4fc7;
+      --purple-bg: #eeedfb;
+      --teal: #0f7b60;
+      --teal-bg: #e4f0ec;
+      --font-sans: 'Source Sans 3', 'Helvetica Neue', sans-serif;
+      --font-mono: 'IBM Plex Mono', 'Menlo', monospace;
+    }
 
-  body {
-    font-family: var(--font-sans);
-    color: var(--fg);
-    background: var(--bg);
-    line-height: 1.5;
-  }
+    body {
+      font-family: var(--font-sans);
+      color: var(--fg);
+      background: var(--bg);
+      line-height: 1.5;
+    }
 
-  .container {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 24px 16px;
-  }
+    .container {
+      max-width: 740px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
 
-  .controls {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-  }
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
 
-  .btn {
-    padding: 6px 16px;
-    font-size: 13px;
-    font-family: var(--font-sans);
-    font-weight: 500;
-    cursor: pointer;
-    border-radius: 6px;
-    border: 1px solid var(--border);
-    background: var(--bg);
-    color: var(--fg);
-    transition: background 0.15s;
-  }
-  .btn:hover { background: var(--bg-sub); }
-  .btn:disabled { opacity: 0.35; cursor: default; }
-  .btn-primary {
-    background: var(--fg);
-    color: var(--bg);
-    border-color: var(--fg);
-  }
-  .btn-primary:hover { background: #333; }
+    .btn {
+      padding: 6px 16px; font-size: 13px; font-family: var(--font-sans);
+      font-weight: 500; cursor: pointer; border-radius: 6px;
+      border: 1px solid var(--border); background: var(--bg); color: var(--fg);
+      transition: background 0.15s;
+    }
+    .btn:hover { background: var(--bg-sub); }
+    .btn:disabled { opacity: 0.35; cursor: default; }
+    .btn-primary { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+    .btn-primary:hover { background: #444; }
 
-  .delay-control {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
-    color: var(--fg-dim);
-  }
-  .delay-control input[type=range] { width: 90px; }
-  .delay-control .val {
-    font-family: var(--font-mono);
-    font-size: 12px;
-    min-width: 40px;
-  }
+    .delay-control {
+      margin-left: auto; display: flex; align-items: center;
+      gap: 8px; font-size: 12px; color: var(--fg-dim);
+    }
+    .delay-control input[type=range] { width: 90px; }
+    .delay-control .val { font-family: var(--font-mono); font-size: 12px; min-width: 40px; }
 
-  .main-layout {
-    display: flex;
-    gap: 24px;
-    align-items: flex-start;
-  }
+    .hint { font-size: 13px; color: var(--fg-faint); text-align: center; padding: 60px 0; }
 
-  .timeline-panel { flex: 1; min-width: 0; }
+    .ts-row {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      justify-content: center; margin: 16px 0;
+    }
+    .ts-pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 10px; border-radius: 5px;
+      font-family: var(--font-mono); font-size: 12px;
+      background: var(--bg-sub); border: 1px solid var(--border);
+    }
+    .ts-pill .ts-name { font-weight: 600; }
 
-  .sidebar {
-    width: 220px;
-    flex-shrink: 0;
-    position: sticky;
-    top: 24px;
-  }
+    .formula-section { display: none; margin-top: 20px; }
+    .formula-section.show { display: block; }
 
-  .formula-card {
-    background: var(--bg-sub);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 16px;
-    margin-bottom: 12px;
-  }
-  .formula-card .label {
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--fg-faint);
-    margin-bottom: 8px;
-  }
-  .formula-card .value {
-    font-family: var(--font-mono);
-    font-size: 20px;
-    font-weight: 600;
-    margin-bottom: 4px;
-  }
-  .formula-card .expr {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: var(--fg-dim);
-    word-break: break-all;
-  }
+    .formula-block {
+      background: var(--bg-sub); border: 1px solid var(--border);
+      border-radius: 8px; padding: 18px 20px; margin-bottom: 14px;
+    }
+    .formula-header {
+      display: flex; align-items: center;
+      justify-content: space-between; margin-bottom: 10px;
+    }
+    .formula-title { font-size: 13px; font-weight: 600; color: var(--fg); }
+    .formula-result { font-family: var(--font-mono); font-size: 18px; font-weight: 600; }
 
-  .block-stack {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    margin-top: 12px;
-  }
-  .block-bar {
-    height: 22px;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    padding: 0 8px;
-    font-family: var(--font-mono);
-    font-size: 10px;
-    font-weight: 500;
-    position: relative;
-    min-width: 20px;
-    transition: width 0.4s ease;
-  }
-  .block-bar.flight1 { background: var(--coral-bg); color: var(--coral); border: 1px solid var(--coral); }
-  .block-bar.server  { background: var(--teal-bg); color: var(--teal); border: 1px solid var(--teal); }
-  .block-bar.flight2 { background: var(--purple-bg); color: var(--purple); border: 1px solid var(--purple); }
+    .f-step {
+      display: flex; align-items: baseline;
+      font-family: var(--font-mono); font-size: 13px; line-height: 1.9;
+    }
+    .f-expr { flex: 1; color: var(--fg-dim); }
+    .f-comment {
+      font-family: var(--font-sans); font-size: 11px;
+      color: var(--fg-faint); margin-left: 12px;
+      font-style: italic; white-space: nowrap;
+    }
 
-  .bar-label {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+    .c-coral { color: var(--coral); font-weight: 500; }
+    .c-purple { color: var(--purple); font-weight: 500; }
+    .c-teal { color: var(--teal); font-weight: 500; }
+    .c-result { color: var(--fg); font-weight: 600; }
 
-  .legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-top: 16px;
-    padding-top: 12px;
-    border-top: 1px solid var(--border);
-  }
-  .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    color: var(--fg-dim);
-  }
-  .legend-swatch {
-    width: 10px;
-    height: 10px;
-    border-radius: 2px;
-  }
+    .pill-c { background: var(--coral-bg); color: var(--coral); padding: 1px 6px; border-radius: 3px; font-weight: 500; }
+    .pill-p { background: var(--purple-bg); color: var(--purple); padding: 1px 6px; border-radius: 3px; font-weight: 500; }
+    .pill-t { background: var(--teal-bg); color: var(--teal); padding: 1px 6px; border-radius: 3px; font-weight: 500; }
 
-  .hint {
-    font-size: 13px;
-    color: var(--fg-faint);
-    text-align: center;
-    padding: 60px 0;
-  }
+    .divider { height: 1px; background: var(--border); margin: 4px 0; opacity: 0.4; }
 
-  .ts-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 12px;
-  }
-  .ts-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-family: var(--font-mono);
-    font-size: 11px;
-    background: var(--bg-sub);
-    border: 1px solid var(--border);
-  }
-  .ts-pill .ts-name { font-weight: 600; }
+    .bar-row { display: flex; gap: 2px; margin-top: 12px; height: 24px; }
+    .bar-seg {
+      height: 100%; border-radius: 4px; display: flex;
+      align-items: center; justify-content: center;
+      font-family: var(--font-mono); font-size: 10px;
+      font-weight: 500; min-width: 28px;
+    }
+    .bar-seg.flight1 { background: var(--coral-bg); color: var(--coral); border: 1px solid var(--coral); }
+    .bar-seg.server  { background: var(--teal-bg); color: var(--teal); border: 1px solid var(--teal); }
+    .bar-seg.flight2 { background: var(--purple-bg); color: var(--purple); border: 1px solid var(--purple); }
 
-  @media (max-width: 640px) {
-    .main-layout { flex-direction: column; }
-    .sidebar { width: 100%; position: static; }
-  }
-</style>
+    .legend {
+      display: flex; flex-wrap: wrap; gap: 14px;
+      margin-top: 14px; justify-content: center;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--fg-dim); }
+    .legend-swatch { width: 10px; height: 10px; border-radius: 2px; }
+
+    @media (max-width: 600px) { .f-comment { display: none; } }
+  </style>
 </head>
 <body>
 <div class="container">
@@ -220,57 +148,49 @@
     </div>
   </div>
 
-  <div class="main-layout">
-    <div class="timeline-panel">
-      <svg id="ntp-svg" width="100%" viewBox="0 0 460 60">
-        <!-- Client / Server headers -->
-        <rect x="50" y="8" width="90" height="34" rx="6" fill="var(--bg-sub)" stroke="var(--border)" stroke-width="1"/>
-        <text x="95" y="29" text-anchor="middle" font-family="var(--font-sans)" font-size="13" font-weight="600" fill="var(--fg)">Client</text>
+  <svg id="ntp-svg" width="100%" viewBox="0 0 520 60">
+    <!-- Client header -->
+    <rect x="90" y="8" width="80" height="32" rx="6" fill="var(--bg-sub)" stroke="var(--border)" stroke-width="1"/>
+    <text x="130" y="28" text-anchor="middle" font-family="var(--font-sans)" font-size="13" font-weight="600" fill="var(--fg)">Client</text>
+    <!-- Server header -->
+    <rect x="320" y="8" width="80" height="32" rx="6" fill="var(--bg-sub)" stroke="var(--border)" stroke-width="1"/>
+    <text x="360" y="28" text-anchor="middle" font-family="var(--font-sans)" font-size="13" font-weight="600" fill="var(--fg)">Server</text>
+    <!-- Timelines -->
+    <line x1="130" y1="46" x2="130" y2="56" stroke="var(--fg)" stroke-width="1" opacity="0.2" id="client-line"/>
+    <line x1="360" y1="46" x2="360" y2="56" stroke="var(--fg)" stroke-width="1" opacity="0.2" id="server-line"/>
+    <g id="ping-group"></g>
+  </svg>
 
-        <rect x="320" y="8" width="90" height="34" rx="6" fill="var(--bg-sub)" stroke="var(--border)" stroke-width="1"/>
-        <text x="365" y="29" text-anchor="middle" font-family="var(--font-sans)" font-size="13" font-weight="600" fill="var(--fg)">Server</text>
+  <div id="empty-hint" class="hint">Click "Send NTP request" to begin</div>
+  <div class="ts-row" id="ts-row" style="display:none;"></div>
 
-        <!-- Vertical timelines -->
-        <line x1="95" y1="48" x2="95" y2="56" stroke="var(--fg)" stroke-width="1" opacity="0.2" id="client-line"/>
-        <line x1="365" y1="48" x2="365" y2="56" stroke="var(--fg)" stroke-width="1" opacity="0.2" id="server-line"/>
-
-        <g id="ping-group"></g>
-      </svg>
-
-      <div id="empty-hint" class="hint">Click "Send NTP request" to begin</div>
+  <div class="formula-section" id="formula-section">
+    <div class="formula-block">
+      <div class="formula-header">
+        <span class="formula-title">① Round-trip delay δ</span>
+        <span class="formula-result" id="delta-result"></span>
+      </div>
+      <div id="delta-steps"></div>
+      <div class="bar-row" id="delta-bar"></div>
     </div>
-
-    <div class="sidebar" id="sidebar" style="display: none;">
-      <div class="formula-card">
-        <div class="label">Round-trip delay δ</div>
-        <div class="value" id="delay-val">—</div>
-        <div class="expr">δ = (t₃ − t₀) − (t₂ − t₁)</div>
-        <div class="block-stack" id="delay-stack"></div>
+    <div class="formula-block">
+      <div class="formula-header">
+        <span class="formula-title">② Clock offset θ</span>
+        <span class="formula-result" id="theta-result"></span>
       </div>
-
-      <div class="formula-card">
-        <div class="label">Clock offset θ</div>
-        <div class="value" id="offset-val">—</div>
-        <div class="expr">θ = ½[(t₁ − t₀) + (t₂ − t₃)]</div>
-      </div>
-
-      <div class="formula-card">
-        <div class="label">Timestamps</div>
-        <div class="ts-row" id="ts-row"></div>
-      </div>
-
-      <div class="legend">
-        <div class="legend-item"><div class="legend-swatch" style="background:var(--coral);"></div>Request flight</div>
-        <div class="legend-item"><div class="legend-swatch" style="background:var(--teal);"></div>Server processing</div>
-        <div class="legend-item"><div class="legend-swatch" style="background:var(--purple);"></div>Response flight</div>
-      </div>
+      <div id="theta-steps"></div>
     </div>
+  </div>
+
+  <div class="legend" id="legend" style="display:none;">
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--coral);"></div>Request flight (t₀→t₁)</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--teal);"></div>Server processing (t₁→t₂)</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--purple);"></div>Response flight (t₂→t₃)</div>
   </div>
 </div>
 
 <script>
-  let pingCount = 0;
-  let networkDelay = 60;
+  let pingCount = 0, networkDelay = 60;
   let serverOffset = Math.round((Math.random() * 160) - 80);
   const maxPings = 5;
 
@@ -279,16 +199,21 @@
     document.getElementById('delay-label').textContent = v + ' ms';
   }
 
+  function makeSvg(tag) { return document.createElementNS('http://www.w3.org/2000/svg', tag); }
+  function setA(el, o) { for (const [k,v] of Object.entries(o)) el.setAttribute(k, v); }
+
   function sendPing() {
     if (pingCount >= maxPings) return;
 
     document.getElementById('empty-hint').style.display = 'none';
-    document.getElementById('sidebar').style.display = 'block';
+    document.getElementById('ts-row').style.display = 'flex';
+    document.getElementById('formula-section').classList.add('show');
+    document.getElementById('legend').style.display = 'flex';
 
     const now = Date.now();
     const jitter1 = Math.round((Math.random() - 0.3) * networkDelay * 0.4);
     const jitter2 = Math.round((Math.random() - 0.3) * networkDelay * 0.4);
-    const serverProc = Math.round(5 + Math.random() * 15);
+    const serverProc = Math.round(20 + Math.random() * 30); // bigger server proc for visibility
 
     const t0 = now;
     const flight1 = networkDelay + jitter1;
@@ -297,202 +222,257 @@
     const flight2 = networkDelay + jitter2;
     const t3 = t0 + flight1 + serverProc + flight2;
 
-    const yBase = 60 + pingCount * 140;
+    // --- Layout constants ---
+    const cX = 130, sX = 360;
+    const spanH = 220; // taller to spread things out
+    const yBase = 56 + pingCount * (spanH + 30);
     const svg = document.getElementById('ntp-svg');
     const g = document.getElementById('ping-group');
-
-    // Extend timelines
-    const newH = yBase + 150;
-    svg.setAttribute('viewBox', `0 0 460 ${newH}`);
+    const newH = yBase + spanH + 40;
+    svg.setAttribute('viewBox', `0 0 520 ${newH}`);
     document.getElementById('client-line').setAttribute('y2', newH - 10);
     document.getElementById('server-line').setAttribute('y2', newH - 10);
 
-    // Arrow scaling
-    const arrowLen = 120; // vertical span for each arrow
-
-    const y0 = yBase + 10;
-    const y1 = y0 + arrowLen * (flight1 / (flight1 + serverProc + flight2));
-    const procEnd = y1 + arrowLen * (serverProc / (flight1 + serverProc + flight2));
-    const y3 = y0 + arrowLen;
-
-    const cX = 95;
-    const sX = 365;
-
-    // Shaded flight regions
-    // Flight 1 (coral)
-    const f1Path = `M${cX},${y0} L${sX},${y1} L${sX},${y1} L${cX},${y0}`;
-    const f1Poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-    f1Poly.setAttribute('points', `${cX},${y0} ${sX},${y1} ${sX},${y1+2} ${cX},${y0+2}`);
-    f1Poly.setAttribute('fill', 'var(--coral)');
-    f1Poly.setAttribute('opacity', '0.12');
-
-    // Flight 2 (purple)
-    const f2Poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-    f2Poly.setAttribute('points', `${sX},${procEnd} ${cX},${y3} ${cX},${y3+2} ${sX},${procEnd+2}`);
-    f2Poly.setAttribute('fill', 'var(--purple)');
-    f2Poly.setAttribute('opacity', '0.12');
-
-    // Server processing (teal bar on server line)
-    const procRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    procRect.setAttribute('x', sX - 4);
-    procRect.setAttribute('y', y1);
-    procRect.setAttribute('width', 8);
-    procRect.setAttribute('height', procEnd - y1);
-    procRect.setAttribute('rx', 2);
-    procRect.setAttribute('fill', 'var(--teal)');
-    procRect.setAttribute('opacity', '0.3');
-
-    // Request arrow (coral)
-    const arr1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    arr1.setAttribute('x1', cX); arr1.setAttribute('y1', y0);
-    arr1.setAttribute('x2', sX); arr1.setAttribute('y2', y1);
-    arr1.setAttribute('stroke', 'var(--coral)');
-    arr1.setAttribute('stroke-width', '1.5');
-    arr1.setAttribute('marker-end', 'url(#arrowhead-coral)');
-
-    // Response arrow (purple)
-    const arr2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    arr2.setAttribute('x1', sX); arr2.setAttribute('y1', procEnd);
-    arr2.setAttribute('x2', cX); arr2.setAttribute('y2', y3);
-    arr2.setAttribute('stroke', 'var(--purple)');
-    arr2.setAttribute('stroke-width', '1.5');
-    arr2.setAttribute('marker-end', 'url(#arrowhead-purple)');
-
-    // Timestamp labels
-    function makeTs(x, y, label, val, anchor, color) {
-      const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      txt.setAttribute('x', x); txt.setAttribute('y', y);
-      txt.setAttribute('text-anchor', anchor);
-      txt.setAttribute('font-family', 'var(--font-mono)');
-      txt.setAttribute('font-size', '11');
-      txt.setAttribute('fill', color || 'var(--fg-dim)');
-      txt.textContent = label;
-      return txt;
-    }
-
-    g.appendChild(f1Poly);
-    g.appendChild(f2Poly);
-    g.appendChild(procRect);
-    g.appendChild(arr1);
-    g.appendChild(arr2);
-
-    // Timestamp dots & labels
-    function makeDot(cx, cy, color) {
-      const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      c.setAttribute('cx', cx); c.setAttribute('cy', cy);
-      c.setAttribute('r', 3.5);
-      c.setAttribute('fill', color);
-      return c;
-    }
-
-    g.appendChild(makeDot(cX, y0, 'var(--coral)'));
-    g.appendChild(makeTs(cX - 12, y0 + 1, `t₀`, null, 'end', 'var(--coral)'));
-
-    g.appendChild(makeDot(sX, y1, 'var(--coral)'));
-    g.appendChild(makeTs(sX + 12, y1 + 1, `t₁`, null, 'start', 'var(--teal)'));
-
-    g.appendChild(makeDot(sX, procEnd, 'var(--purple)'));
-    g.appendChild(makeTs(sX + 12, procEnd + 1, `t₂`, null, 'start', 'var(--teal)'));
-
-    g.appendChild(makeDot(cX, y3, 'var(--purple)'));
-    g.appendChild(makeTs(cX - 12, y3 + 1, `t₃`, null, 'end', 'var(--purple)'));
-
-    // Flight labels on arrows
-    const midReqY = (y0 + y1) / 2;
-    const midReqX = (cX + sX) / 2;
-    g.appendChild(makeTs(midReqX, midReqY - 6, `${flight1} ms`, null, 'middle', 'var(--coral)'));
-
-    const midResY = (procEnd + y3) / 2;
-    const midResX = (sX + cX) / 2;
-    g.appendChild(makeTs(midResX, midResY - 6, `${flight2} ms`, null, 'middle', 'var(--purple)'));
-
-    // Server proc label
-    const midProcY = (y1 + procEnd) / 2;
-    g.appendChild(makeTs(sX + 16, midProcY + 4, `${serverProc} ms`, null, 'start', 'var(--teal)'));
-
-    // Ensure arrow markers exist
     ensureMarkers();
 
-    // Update sidebar
-    const delta = (t3 - t0) - (t2 - t1);
-    const theta = ((t1 - t0) + (t2 - t3)) / 2;
+    // --- Y positions scaled to actual time proportions ---
+    const totalTime = flight1 + serverProc + flight2;
+    const y0 = yBase + 10;
+    const y1 = y0 + (flight1 / totalTime) * spanH;
+    const y2 = y1 + (serverProc / totalTime) * spanH;
+    const y3 = y0 + spanH;
 
-    document.getElementById('delay-val').textContent = delta + ' ms';
-    document.getElementById('offset-val').textContent = (theta >= 0 ? '+' : '') + Math.round(theta) + ' ms';
+    // --- Shaded flight regions (wider polygons for visibility) ---
+    const f1 = makeSvg('polygon');
+    f1.setAttribute('points', `${cX},${y0} ${sX},${y1} ${sX},${y1+3} ${cX},${y0+3}`);
+    setA(f1, {fill:'var(--coral)', opacity:'0.1'});
 
-    // Build block stack
-    const totalBar = flight1 + serverProc + flight2;
-    const maxBarW = 180;
-    const stack = document.getElementById('delay-stack');
-    stack.innerHTML = `
-      <div class="block-bar flight1" style="width:${Math.max(30, flight1/totalBar*maxBarW)}px">
-        <span class="bar-label">↑ ${flight1} ms</span>
+    const f2 = makeSvg('polygon');
+    f2.setAttribute('points', `${sX},${y2} ${cX},${y3} ${cX},${y3+3} ${sX},${y2+3}`);
+    setA(f2, {fill:'var(--purple)', opacity:'0.1'});
+
+    // --- Server processing bar (thick on server line) ---
+    const pr = makeSvg('rect');
+    setA(pr, {x:sX-5, y:y1, width:10, height:y2-y1, rx:3, fill:'var(--teal)', opacity:'0.25'});
+
+    // --- Arrows ---
+    const a1 = makeSvg('line');
+    setA(a1, {x1:cX, y1:y0, x2:sX, y2:y1, stroke:'var(--coral)', 'stroke-width':'1.5', 'marker-end':'url(#arrowhead-coral)'});
+    const a2 = makeSvg('line');
+    setA(a2, {x1:sX, y1:y2, x2:cX, y2:y3, stroke:'var(--purple)', 'stroke-width':'1.5', 'marker-end':'url(#arrowhead-purple)'});
+
+    [f1, f2, pr, a1, a2].forEach(el => g.appendChild(el));
+
+    // --- Flight-time bars on the LEFT (client side) ---
+    // Bar for flight1: from y0 to y0 + flight1_visual_height
+    const flight1H = y1 - y0;
+    const flight2H = y3 - y2;
+
+    // Flight 1 vertical bar (left of client line)
+    const fb1 = makeSvg('rect');
+    setA(fb1, {x:cX-30, y:y0, width:12, height:flight1H, rx:3, fill:'var(--coral)', opacity:'0.2'});
+    g.appendChild(fb1);
+    const fb1border = makeSvg('rect');
+    setA(fb1border, {x:cX-30, y:y0, width:12, height:flight1H, rx:3, fill:'none', stroke:'var(--coral)', 'stroke-width':'1'});
+    g.appendChild(fb1border);
+
+    // Flight 1 label
+    const fb1label = makeSvg('text');
+    setA(fb1label, {x:cX-34, y:y0 + flight1H/2 + 4, 'text-anchor':'end', 'font-family':'var(--font-mono)', 'font-size':'10', fill:'var(--coral)'});
+    fb1label.textContent = flight1 + ' ms';
+    g.appendChild(fb1label);
+
+    // Bracket ticks for flight1
+    const fb1top = makeSvg('line');
+    setA(fb1top, {x1:cX-34, y1:y0, x2:cX-30, y2:y0, stroke:'var(--coral)', 'stroke-width':'0.8'});
+    g.appendChild(fb1top);
+    const fb1bot = makeSvg('line');
+    setA(fb1bot, {x1:cX-34, y1:y0+flight1H, x2:cX-30, y2:y0+flight1H, stroke:'var(--coral)', 'stroke-width':'0.8'});
+    g.appendChild(fb1bot);
+
+    // Flight 2 vertical bar (left of client line, lower)
+    const fb2 = makeSvg('rect');
+    setA(fb2, {x:cX-30, y:y2, width:12, height:flight2H, rx:3, fill:'var(--purple)', opacity:'0.2'});
+    g.appendChild(fb2);
+    const fb2border = makeSvg('rect');
+    setA(fb2border, {x:cX-30, y:y2, width:12, height:flight2H, rx:3, fill:'none', stroke:'var(--purple)', 'stroke-width':'1'});
+    g.appendChild(fb2border);
+
+    // Flight 2 label
+    const fb2label = makeSvg('text');
+    setA(fb2label, {x:cX-34, y:y2 + flight2H/2 + 4, 'text-anchor':'end', 'font-family':'var(--font-mono)', 'font-size':'10', fill:'var(--purple)'});
+    fb2label.textContent = flight2 + ' ms';
+    g.appendChild(fb2label);
+
+    const fb2top = makeSvg('line');
+    setA(fb2top, {x1:cX-34, y1:y2, x2:cX-30, y2:y2, stroke:'var(--purple)', 'stroke-width':'0.8'});
+    g.appendChild(fb2top);
+    const fb2bot = makeSvg('line');
+    setA(fb2bot, {x1:cX-34, y1:y2+flight2H, x2:cX-30, y2:y2+flight2H, stroke:'var(--purple)', 'stroke-width':'0.8'});
+    g.appendChild(fb2bot);
+
+    // --- Server processing bar on the RIGHT ---
+    const spH = y2 - y1;
+    const sp = makeSvg('rect');
+    setA(sp, {x:sX+18, y:y1, width:12, height:spH, rx:3, fill:'var(--teal)', opacity:'0.2'});
+    g.appendChild(sp);
+    const spBorder = makeSvg('rect');
+    setA(spBorder, {x:sX+18, y:y1, width:12, height:spH, rx:3, fill:'none', stroke:'var(--teal)', 'stroke-width':'1'});
+    g.appendChild(spBorder);
+
+    const spLabel = makeSvg('text');
+    setA(spLabel, {x:sX+36, y:y1 + spH/2 + 4, 'text-anchor':'start', 'font-family':'var(--font-mono)', 'font-size':'10', fill:'var(--teal)'});
+    spLabel.textContent = serverProc + ' ms';
+    g.appendChild(spLabel);
+
+    const spTop = makeSvg('line');
+    setA(spTop, {x1:sX+30, y1:y1, x2:sX+34, y2:y1, stroke:'var(--teal)', 'stroke-width':'0.8'});
+    g.appendChild(spTop);
+    const spBot = makeSvg('line');
+    setA(spBot, {x1:sX+30, y1:y2, x2:sX+34, y2:y2, stroke:'var(--teal)', 'stroke-width':'0.8'});
+    g.appendChild(spBot);
+
+    // --- Timestamp dots and labels ---
+    function dot(cx, cy, col) { const c = makeSvg('circle'); setA(c, {cx, cy, r:4, fill:col}); g.appendChild(c); }
+    function lab(x, y, txt, anc, col, size) {
+      const t = makeSvg('text');
+      setA(t, {x, y, 'text-anchor':anc, 'font-family':'var(--font-mono)', 'font-size': size||'12', 'font-weight':'500', fill:col});
+      t.textContent = txt; g.appendChild(t);
+    }
+
+    dot(cX, y0, 'var(--coral)');
+    lab(cX+8, y0-8, 't₀', 'start', 'var(--coral)');
+
+    dot(sX, y1, 'var(--teal)');
+    lab(sX-8, y1-8, 't₁', 'end', 'var(--teal)');
+
+    dot(sX, y2, 'var(--teal)');
+    lab(sX-8, y2+16, 't₂', 'end', 'var(--teal)');
+
+    dot(cX, y3, 'var(--purple)');
+    lab(cX+8, y3+16, 't₃', 'start', 'var(--purple)');
+
+    // --- Flight labels on arrows ---
+    const midReqX = (cX + sX) / 2;
+    const midReqY = (y0 + y1) / 2;
+    lab(midReqX, midReqY - 8, 'request', 'middle', 'var(--coral)', '10');
+
+    const midResX = (sX + cX) / 2;
+    const midResY = (y2 + y3) / 2;
+    lab(midResX, midResY - 8, 'response', 'middle', 'var(--purple)', '10');
+
+    // --- Timestamps ---
+    const T0=t0%100000, T1=t1%100000, T2=t2%100000, T3=t3%100000;
+    document.getElementById('ts-row').innerHTML = `
+      <div class="ts-pill"><span class="ts-name c-coral">t₀</span> ${T0}</div>
+      <div class="ts-pill"><span class="ts-name c-teal">t₁</span> ${T1}</div>
+      <div class="ts-pill"><span class="ts-name c-teal">t₂</span> ${T2}</div>
+      <div class="ts-pill"><span class="ts-name c-purple">t₃</span> ${T3}</div>
+    `;
+
+    // --- δ ---
+    const elapsed = t3 - t0;
+    const srvTime = t2 - t1;
+    const delta = elapsed - srvTime;
+
+    document.getElementById('delta-result').textContent = delta + ' ms';
+
+    document.getElementById('delta-steps').innerHTML = `
+      <div class="f-step">
+        <span class="f-expr">δ = (<span class="c-purple">t₃</span> − <span class="c-coral">t₀</span>) − (<span class="c-teal">t₂</span> − <span class="c-teal">t₁</span>)</span>
+        <span class="f-comment">total wait minus server time</span>
       </div>
-      <div class="block-bar server" style="width:${Math.max(30, serverProc/totalBar*maxBarW)}px">
-        <span class="bar-label">⏱ ${serverProc} ms</span>
+      <div class="divider"></div>
+      <div class="f-step">
+        <span class="f-expr"><span class="c-purple">t₃</span> − <span class="c-coral">t₀</span> = <span class="pill-p">${T3}</span> − <span class="pill-c">${T0}</span> = <span class="c-result">${elapsed} ms</span></span>
+        <span class="f-comment">how long the client waited</span>
       </div>
-      <div class="block-bar flight2" style="width:${Math.max(30, flight2/totalBar*maxBarW)}px">
-        <span class="bar-label">↓ ${flight2} ms</span>
+      <div class="f-step">
+        <span class="f-expr"><span class="c-teal">t₂</span> − <span class="c-teal">t₁</span> = <span class="pill-t">${T2}</span> − <span class="pill-t">${T1}</span> = <span class="c-result">${srvTime} ms</span></span>
+        <span class="f-comment">server processing (subtract this)</span>
+      </div>
+      <div class="divider"></div>
+      <div class="f-step">
+        <span class="f-expr">δ = ${elapsed} − ${srvTime} = <span class="c-result">${delta} ms</span></span>
+        <span class="f-comment">network only: flight₁ + flight₂</span>
       </div>
     `;
 
-    // Timestamps
-    const tsRow = document.getElementById('ts-row');
-    tsRow.innerHTML = `
-      <div class="ts-pill"><span class="ts-name" style="color:var(--coral)">t₀</span> ${t0 % 100000}</div>
-      <div class="ts-pill"><span class="ts-name" style="color:var(--teal)">t₁</span> ${t1 % 100000}</div>
-      <div class="ts-pill"><span class="ts-name" style="color:var(--teal)">t₂</span> ${t2 % 100000}</div>
-      <div class="ts-pill"><span class="ts-name" style="color:var(--purple)">t₃</span> ${t3 % 100000}</div>
+    const barTotal = flight1 + serverProc + flight2;
+    document.getElementById('delta-bar').innerHTML = `
+      <div class="bar-seg flight1" style="width:${(flight1/barTotal*100).toFixed(1)}%">↑ ${flight1}</div>
+      <div class="bar-seg server" style="width:${(serverProc/barTotal*100).toFixed(1)}%">⏱ ${serverProc}</div>
+      <div class="bar-seg flight2" style="width:${(flight2/barTotal*100).toFixed(1)}%">↓ ${flight2}</div>
+    `;
+
+    // --- θ ---
+    const legA = t1 - t0;
+    const legB = t2 - t3;
+    const theta = (legA + legB) / 2;
+    const tSign = theta >= 0 ? '+' : '';
+
+    document.getElementById('theta-result').textContent = tSign + Math.round(theta) + ' ms';
+    document.getElementById('theta-result').style.color = Math.abs(theta) < 1 ? 'var(--teal)' : 'var(--coral)';
+
+    const meaning = theta > 0.5 ? 'client is slow → advance clock' : theta < -0.5 ? 'client is fast → retard clock' : 'clocks aligned';
+
+    document.getElementById('theta-steps').innerHTML = `
+      <div class="f-step">
+        <span class="f-expr">θ = ½ [(<span class="c-teal">t₁</span> − <span class="c-coral">t₀</span>) + (<span class="c-teal">t₂</span> − <span class="c-purple">t₃</span>)]</span>
+        <span class="f-comment">average of the two legs</span>
+      </div>
+      <div class="divider"></div>
+      <div class="f-step">
+        <span class="f-expr"><span class="c-teal">t₁</span> − <span class="c-coral">t₀</span> = <span class="pill-t">${T1}</span> − <span class="pill-c">${T0}</span> = <span class="c-result">${legA} ms</span></span>
+        <span class="f-comment">= offset + flight₁</span>
+      </div>
+      <div class="f-step">
+        <span class="f-expr"><span class="c-teal">t₂</span> − <span class="c-purple">t₃</span> = <span class="pill-t">${T2}</span> − <span class="pill-p">${T3}</span> = <span class="c-result">${legB} ms</span></span>
+        <span class="f-comment">= offset − flight₂</span>
+      </div>
+      <div class="divider"></div>
+      <div class="f-step">
+        <span class="f-expr">θ = ½ × (${legA} + (${legB})) = <span class="c-result">${tSign}${Math.round(theta)} ms</span></span>
+        <span class="f-comment">${meaning}</span>
+      </div>
+      <div class="f-step" style="margin-top:4px;">
+        <span class="f-expr" style="font-size:11px;color:var(--fg-faint);">
+          flights cancel: ½(offset+flight₁ + offset−flight₂) ≈ offset &nbsp;(if flight₁ ≈ flight₂)
+        </span>
+      </div>
     `;
 
     pingCount++;
-    if (pingCount >= maxPings) {
-      document.getElementById('ping-btn').disabled = true;
-    }
+    if (pingCount >= maxPings) document.getElementById('ping-btn').disabled = true;
   }
 
   function ensureMarkers() {
     const svg = document.getElementById('ntp-svg');
     if (svg.querySelector('#arrowhead-coral')) return;
-
-    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-
-    function makeMarker(id, color) {
-      const m = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
-      m.setAttribute('id', id);
-      m.setAttribute('viewBox', '0 0 10 10');
-      m.setAttribute('refX', '9');
-      m.setAttribute('refY', '5');
-      m.setAttribute('markerWidth', '6');
-      m.setAttribute('markerHeight', '6');
-      m.setAttribute('orient', 'auto-start-reverse');
-      const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      p.setAttribute('d', 'M2 2L8 5L2 8');
-      p.setAttribute('fill', 'none');
-      p.setAttribute('stroke', color);
-      p.setAttribute('stroke-width', '1.5');
-      p.setAttribute('stroke-linecap', 'round');
-      p.setAttribute('stroke-linejoin', 'round');
-      m.appendChild(p);
-      return m;
+    const defs = makeSvg('defs');
+    function mm(id, col) {
+      const m = makeSvg('marker');
+      setA(m, {id, viewBox:'0 0 10 10', refX:'9', refY:'5', markerWidth:'6', markerHeight:'6', orient:'auto-start-reverse'});
+      const p = makeSvg('path');
+      setA(p, {d:'M2 2L8 5L2 8', fill:'none', stroke:col, 'stroke-width':'1.5', 'stroke-linecap':'round', 'stroke-linejoin':'round'});
+      m.appendChild(p); return m;
     }
-
-    defs.appendChild(makeMarker('arrowhead-coral', 'var(--coral)'));
-    defs.appendChild(makeMarker('arrowhead-purple', 'var(--purple)'));
+    defs.appendChild(mm('arrowhead-coral','var(--coral)'));
+    defs.appendChild(mm('arrowhead-purple','var(--purple)'));
     svg.insertBefore(defs, svg.firstChild);
   }
 
   function resetAll() {
     pingCount = 0;
     serverOffset = Math.round((Math.random() * 160) - 80);
-
     document.getElementById('ping-group').innerHTML = '';
     document.getElementById('empty-hint').style.display = 'block';
-    document.getElementById('sidebar').style.display = 'none';
+    document.getElementById('ts-row').style.display = 'none';
+    document.getElementById('formula-section').classList.remove('show');
+    document.getElementById('legend').style.display = 'none';
     document.getElementById('ping-btn').disabled = false;
-
     const svg = document.getElementById('ntp-svg');
-    svg.setAttribute('viewBox', '0 0 460 60');
+    svg.setAttribute('viewBox', '0 0 520 60');
     document.getElementById('client-line').setAttribute('y2', '56');
     document.getElementById('server-line').setAttribute('y2', '56');
   }

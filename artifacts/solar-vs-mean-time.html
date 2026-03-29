@@ -3,29 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Solar Time vs Mean Solar Time</title>
+<title>Real Sun vs Mean Sun</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   :root {
-    --fg: #1e1e1e;
-    --fg-dim: #5a5a5a;
-    --fg-faint: #999;
-    --bg: #fff;
-    --bg-sub: #f5f5f2;
-    --border: #ddd;
+    --fg: #2c2418;
+    --fg-dim: #6b5d4d;
+    --fg-faint: #a89a88;
+    --bg: #fdfbfc;
+    --bg-sub: #faf7f9;
+    --border: #d4c5a9;
     --sun-gold: #e6a817;
     --sun-glow: #fff3d4;
-    --mean-sun: #6366f1;
-    --mean-sun-light: #e0e1ff;
-    --earth-blue: #3b82c8;
-    --orbit-line: #c4bfb5;
-    --red: #d9534f;
-    --green: #3a9e6e;
-    --font-serif: 'Source Serif 4', Georgia, serif;
-    --font-sans: 'Source Sans 3', system-ui, sans-serif;
+    --mean-sun: #5b4fc7;
+    --earth-blue: #1a5276;
+    --orbit-line: #b8a786;
+    --font-serif: 'Playfair Display', Georgia, serif;
+    --font-sans: 'Source Sans 3', 'Helvetica Neue', sans-serif;
     --font-mono: 'IBM Plex Mono', monospace;
   }
 
@@ -39,81 +36,115 @@
   .container {
     max-width: 760px;
     margin: 0 auto;
-    padding: 32px 20px 48px;
+    padding: 28px 20px 40px;
   }
 
   h1 {
     font-family: var(--font-serif);
-    font-size: 24px;
+    font-size: 22px;
     font-weight: 700;
     margin-bottom: 8px;
   }
+
   .intro {
     font-size: 14px;
     color: var(--fg-dim);
-    margin-bottom: 28px;
-    max-width: 600px;
-    line-height: 1.6;
+    margin-bottom: 24px;
+    max-width: 640px;
+    line-height: 1.65;
   }
 
-  /* ── Orbit diagram ── */
-  .orbit-section {
+  .main-section {
     background: var(--bg-sub);
     border: 1px solid var(--border);
     border-radius: 10px;
-    padding: 24px;
-    margin-bottom: 20px;
-  }
-  .orbit-section h2 {
-    font-family: var(--font-serif);
-    font-size: 16px;
-    font-weight: 600;
-    margin-bottom: 16px;
+    padding: 22px;
   }
 
-  .orbit-canvas-wrap {
+  .main-section h2 {
+    font-family: var(--font-serif);
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 14px;
+  }
+
+  /* ── Legend ── */
+  .legend {
     display: flex;
     gap: 20px;
-    align-items: flex-start;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
   }
-  .orbit-canvas-wrap svg { flex-shrink: 0; }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    color: var(--fg-dim);
+  }
+  .leg-real {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--sun-gold);
+  }
+  .leg-mean {
+    width: 12px; height: 12px; border-radius: 50%;
+    border: 2px dashed var(--mean-sun);
+  }
+  .leg-earth {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--earth-blue);
+  }
 
-  .orbit-info {
+  /* ── Orbit SVG ── */
+  #orbit-svg {
+    display: block;
+    width: 100%;
+  }
+
+  /* ── Stats row ── */
+  .stats-row {
+    display: flex;
+    gap: 0;
+    flex-wrap: wrap;
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+  }
+  .stat {
     flex: 1;
-    min-width: 0;
+    min-width: 150px;
+    padding: 0 16px 0 0;
   }
-  .orbit-info .stat {
-    margin-bottom: 12px;
-  }
-  .orbit-info .stat-label {
-    font-size: 11px;
+  .stat:last-child { padding-right: 0; }
+  .stat-label {
+    font-size: 10px;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.05em;
     color: var(--fg-faint);
     font-weight: 600;
-    margin-bottom: 2px;
+    margin-bottom: 3px;
   }
-  .orbit-info .stat-val {
+  .stat-val {
     font-family: var(--font-mono);
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 500;
   }
-  .orbit-info .stat-sub {
+  .stat-sub {
     font-size: 12px;
     color: var(--fg-dim);
     margin-top: 2px;
+    line-height: 1.4;
   }
-
-  .diff-pos { color: var(--red); }
-  .diff-neg { color: var(--green); }
-  .diff-zero { color: var(--fg-faint); }
+  .ahead { color: #c0512d; }
+  .behind { color: #2471a3; }
+  .same { color: var(--fg-faint); }
 
   /* ── Slider ── */
   .slider-row {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-top: 16px;
+    margin-top: 18px;
     padding-top: 16px;
     border-top: 1px solid var(--border);
   }
@@ -127,552 +158,307 @@
     flex: 1;
     accent-color: var(--earth-blue);
   }
-  .slider-row .day-label {
+  .slider-val {
     font-family: var(--font-mono);
     font-size: 13px;
-    min-width: 80px;
+    min-width: 56px;
     text-align: right;
-  }
-
-  /* ── Equation of time chart ── */
-  .eot-section {
-    background: var(--bg-sub);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 24px;
-    margin-bottom: 20px;
-  }
-  .eot-section h2 {
-    font-family: var(--font-serif);
-    font-size: 16px;
-    font-weight: 600;
-    margin-bottom: 4px;
-  }
-  .eot-section .eot-sub {
-    font-size: 13px;
-    color: var(--fg-dim);
-    margin-bottom: 16px;
-  }
-
-  /* ── Legend ── */
-  .legend {
-    display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
-    margin-bottom: 16px;
-  }
-  .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    color: var(--fg-dim);
-  }
-  .legend-dot {
-    width: 10px; height: 10px; border-radius: 50%;
-  }
-  .legend-line {
-    width: 16px; height: 2px; border-radius: 1px;
-  }
-
-  /* ── Clock comparison ── */
-  .clock-section {
-    background: var(--bg-sub);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 24px;
-  }
-  .clock-section h2 {
-    font-family: var(--font-serif);
-    font-size: 16px;
-    font-weight: 600;
-    margin-bottom: 16px;
-  }
-  .clocks-row {
-    display: flex;
-    gap: 24px;
-    justify-content: center;
-  }
-  .clock-card {
-    text-align: center;
-  }
-  .clock-card .clock-label {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--fg-faint);
-    font-weight: 600;
-    margin-bottom: 8px;
-  }
-  .clock-card .clock-time {
-    font-family: var(--font-mono);
-    font-size: 28px;
-    font-weight: 500;
-  }
-  .clock-card .clock-note {
-    font-size: 11px;
-    color: var(--fg-dim);
-    margin-top: 4px;
-  }
-  .clock-divider {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    font-size: 12px;
-    color: var(--fg-faint);
-  }
-  .clock-divider .diff-val {
-    font-family: var(--font-mono);
-    font-size: 16px;
-    font-weight: 500;
-  }
-
-  @media (max-width: 600px) {
-    .orbit-canvas-wrap { flex-direction: column; align-items: center; }
-    .clocks-row { flex-direction: column; align-items: center; }
   }
 </style>
 </head>
 <body>
 <div class="container">
 
-  <h1>Solar Time vs Mean Solar Time</h1>
-  <p class="intro">
-    A sundial tracks the <em>real</em> Sun, but the real Sun is an unreliable timekeeper.
-    Earth's elliptical orbit and axial tilt cause solar noon to drift by up to ±16 minutes
-    throughout the year. To get a steady clock, we invented a fiction: the <strong>mean sun</strong>,
-    an imaginary body that travels at a constant speed along the celestial equator.
-    Drag the slider to see the difference.
-  </p>
-
-  <!-- ── Orbit Diagram ── -->
-  <div class="orbit-section">
-    <h2>Earth's orbit — why the Sun appears to speed up and slow down</h2>
+  <div class="main-section">
+    <h2>Earth's orbit — top view (eccentricity exaggerated)</h2>
 
     <div class="legend">
-      <div class="legend-item"><div class="legend-dot" style="background:var(--sun-gold);"></div>Real Sun (at focus)</div>
-      <div class="legend-item"><div class="legend-dot" style="background:var(--mean-sun);"></div>Mean sun position</div>
-      <div class="legend-item"><div class="legend-dot" style="background:var(--earth-blue);"></div>Earth</div>
+      <div class="legend-item"><div class="leg-real"></div>Real Sun</div>
+      <div class="legend-item"><div class="leg-mean"></div>Mean Sun (uniform speed)</div>
+      <div class="legend-item"><div class="leg-earth"></div>Earth</div>
     </div>
 
-    <div class="orbit-canvas-wrap">
-      <svg id="orbit-svg" width="340" height="280" viewBox="0 0 340 280"></svg>
-      <div class="orbit-info">
-        <div class="stat">
-          <div class="stat-label">Date</div>
-          <div class="stat-val" id="info-date">Jan 1</div>
-        </div>
-        <div class="stat">
-          <div class="stat-label">Equation of Time</div>
-          <div class="stat-val" id="info-eot">−3.2 min</div>
-          <div class="stat-sub" id="info-eot-explain">Sundial is 3.2 min ahead of clock</div>
-        </div>
-        <div class="stat">
-          <div class="stat-label">Earth–Sun distance</div>
-          <div class="stat-val" id="info-dist">147.1 Mkm</div>
-          <div class="stat-sub" id="info-speed">Near perihelion — Earth moves faster</div>
-        </div>
-        <div class="stat">
-          <div class="stat-label">Apparent solar day</div>
-          <div class="stat-val" id="info-day-len">24h 0m 0s</div>
-          <div class="stat-sub">Mean solar day is always 24h 0m 0s</div>
-        </div>
+    <svg id="orbit-svg" viewBox="0 0 680 520"></svg>
+
+    <div class="stats-row">
+      <div class="stat">
+        <div class="stat-label">Date</div>
+        <div class="stat-val" id="stat-date">Jan 1</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Real Sun</div>
+        <div class="stat-val" id="stat-gap">—</div>
+        <div class="stat-sub" id="stat-gap-desc">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Earth–Sun distance</div>
+        <div class="stat-val" id="stat-dist">—</div>
+        <div class="stat-sub" id="stat-dist-desc">—</div>
       </div>
     </div>
 
     <div class="slider-row">
       <label>Day of year</label>
-      <input type="range" id="day-slider" min="0" max="364" value="0" step="1" oninput="update(parseInt(this.value))">
-      <span class="day-label" id="slider-date">Jan 1</span>
-    </div>
-  </div>
-
-  <!-- ── Equation of Time Chart ── -->
-  <div class="eot-section">
-    <h2>The Equation of Time</h2>
-    <p class="eot-sub">Difference between apparent (sundial) solar time and mean solar time across the year. The vertical marker follows your selected date.</p>
-    <svg id="eot-svg" width="100%" viewBox="0 0 710 200"></svg>
-  </div>
-
-  <!-- ── Clock Comparison ── -->
-  <div class="clock-section">
-    <h2>What a sundial reads vs a mean-time clock at solar noon</h2>
-    <div class="clocks-row">
-      <div class="clock-card">
-        <div class="clock-label">Mean solar time</div>
-        <svg id="clock-mean" width="120" height="120" viewBox="0 0 120 120"></svg>
-        <div class="clock-time" id="mean-time">12:00:00</div>
-        <div class="clock-note">The "fictitious" steady clock</div>
-      </div>
-      <div class="clock-divider">
-        <span>difference</span>
-        <span class="diff-val" id="clock-diff">+0:00</span>
-      </div>
-      <div class="clock-card">
-        <div class="clock-label" style="color:var(--sun-gold);">Apparent solar time</div>
-        <svg id="clock-apparent" width="120" height="120" viewBox="0 0 120 120"></svg>
-        <div class="clock-time" id="apparent-time" style="color:var(--sun-gold);">12:00:00</div>
-        <div class="clock-note">What a sundial reads</div>
-      </div>
+      <input type="range" id="day-slider" min="0" max="364" value="0">
+      <span class="slider-val" id="day-label">Jan&nbsp;1</span>
     </div>
   </div>
 
 </div>
-
 <script>
-// ── Equation of Time model (simplified analytic) ──
-// Approximation combining eccentricity + obliquity effects
-function equationOfTime(dayOfYear) {
-  const D = dayOfYear;
-  const B = (360 / 365.24) * (D - 81) * Math.PI / 180;
-  // Spencer's approximation (minutes)
-  const E = 9.87 * Math.sin(2 * B) - 7.53 * Math.cos(B) - 1.5 * Math.sin(B);
-  return E; // positive = sundial ahead of mean time
-}
-
-// Earth-Sun distance (AU), simplified Kepler
-function earthSunDist(dayOfYear) {
-  // Perihelion ~Jan 3 (day 3)
-  const M = ((dayOfYear - 3) / 365.25) * 2 * Math.PI;
-  const e = 0.0167;
-  return 1 - e * Math.cos(M); // AU, approximate
-}
-
-// Apparent solar day length deviation from 24h (seconds)
-function dayLengthDev(dayOfYear) {
-  const eot1 = equationOfTime(dayOfYear);
-  const eot2 = equationOfTime(dayOfYear + 1);
-  return (eot2 - eot1) * 60; // seconds difference from mean
-}
-
+// ── Constants ──
+const DEG = Math.PI / 180;
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const MONTH_DAYS = [31,28,31,30,31,30,31,31,30,31,30,31];
 
-function dayToDate(d) {
-  let remaining = d;
+// Cumulative day at start of each month
+const MONTH_START = MONTH_DAYS.reduce((acc, d, i) => {
+  acc.push(i === 0 ? 0 : acc[i-1] + MONTH_DAYS[i-1]);
+  return acc;
+}, []);
+
+// Day → "Jan 3" string
+function dayToStr(d) {
+  let rem = Math.round(d) % 365;
+  if (rem < 0) rem += 365;
   for (let m = 0; m < 12; m++) {
-    if (remaining < MONTH_DAYS[m]) {
-      return { month: m, day: remaining + 1 };
-    }
-    remaining -= MONTH_DAYS[m];
+    if (rem < MONTH_DAYS[m]) return `${MONTHS[m]}\u00a0${rem + 1}`;
+    rem -= MONTH_DAYS[m];
   }
-  return { month: 11, day: 31 };
+  return 'Dec\u00a031';
 }
 
-function dayToString(d) {
-  const dt = dayToDate(d);
-  return `${MONTHS[dt.month]} ${dt.day}`;
+// Equation of time (minutes) — Spencer approximation
+// Positive = real sun ahead of mean sun
+function eotMinutes(D) {
+  const B = (2 * Math.PI / 365.24) * (D - 81);
+  return 9.87 * Math.sin(2 * B) - 7.53 * Math.cos(B) - 1.5 * Math.sin(B);
 }
 
-// ── Draw orbit diagram ──
-const orbitSvg = document.getElementById('orbit-svg');
-const CX = 175, CY = 140;
-const A = 130, B_AXIS = 120; // semi-major, semi-minor for visual
-const ECCENTRICITY_VISUAL = 0.25; // exaggerated for visibility
-const FOCUS_OFFSET = A * ECCENTRICITY_VISUAL;
+// Earth–Sun distance (AU), perihelion ~Jan 3
+function earthSunAU(D) {
+  const M = (2 * Math.PI * (D - 3)) / 365.25;
+  return 1 - 0.0167 * Math.cos(M);
+}
 
-function drawOrbit() {
+// ── Orbit geometry ──
+// viewBox 0 0 680 520
+const OCX = 340, OCY = 255;   // ellipse center
+const OA = 210, OB = 193;     // visual semi-major, semi-minor
+const OE = 0.28;               // exaggerated eccentricity for visibility
+const FOCUS = OA * OE;         // focus offset from center
+const SUN_X = OCX - FOCUS;     // Sun at left focus
+const SUN_Y = OCY;
+
+// True anomaly (radians) from mean anomaly — first-order Kepler
+function trueAnomaly(M_rad) {
+  const e = OE;
+  return M_rad + 2 * e * Math.sin(M_rad) + 1.25 * e * e * Math.sin(2 * M_rad);
+}
+
+// Earth's position on the ellipse for day D (perihelion = day 3)
+function earthPos(D) {
+  const M = (2 * Math.PI * (D - 3)) / 365.25;
+  const nu = trueAnomaly(M); // true anomaly
+  // r in visual units (ellipse, focus = Sun)
+  const r = OA * (1 - OE * OE) / (1 + OE * Math.cos(nu));
+  // perihelion is to the LEFT of the sun in this diagram
+  // nu=0 → perihelion → angle = π (leftward from sun)
+  const angle = nu + Math.PI;
+  return {
+    x: SUN_X + r * Math.cos(angle),
+    y: SUN_Y - r * Math.sin(angle),
+    nu, M
+  };
+}
+
+// Mean Earth: uniform circular motion centered at the Sun, radius = OA
+function meanPos(D) {
+  const M = (2 * Math.PI * (D - 3)) / 365.25;
+  const angle = M + Math.PI; // same starting point as real Earth
+  return {
+    x: SUN_X + OA * Math.cos(angle),
+    y: SUN_Y - OA * Math.sin(angle)
+  };
+}
+
+// ── Draw static orbit background ──
+function drawOrbitBG() {
+  const svg = document.getElementById('orbit-svg');
   let html = '';
 
-  // Orbit ellipse
-  html += `<ellipse cx="${CX}" cy="${CY}" rx="${A}" ry="${B_AXIS}" fill="none" stroke="var(--orbit-line)" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+  // Space background
+  html += `<rect width="680" height="520" fill="#0d1117" rx="8"/>`;
+
+  // Faint radial lines from sun for reference
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * 2 * Math.PI;
+    const x2 = SUN_X + 300 * Math.cos(a);
+    const y2 = SUN_Y - 300 * Math.sin(a);
+    html += `<line x1="${SUN_X}" y1="${SUN_Y}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"
+      stroke="white" stroke-width="0.4" opacity="0.06"/>`;
+  }
+
+  // Mean sun circle (uniform orbit)
+  html += `<circle cx="${SUN_X}" cy="${SUN_Y}" r="${OA}"
+    fill="none" stroke="var(--mean-sun)" stroke-width="1" stroke-dasharray="5 4" opacity="0.35"/>`;
+
+  // Real orbit ellipse
+  html += `<ellipse cx="${OCX}" cy="${OCY}" rx="${OA}" ry="${OB}"
+    fill="none" stroke="var(--orbit-line)" stroke-width="1.5" opacity="0.6"/>`;
+
+  // Month markers on the real orbit
+  for (let m = 0; m < 12; m++) {
+    const D = MONTH_START[m];
+    const pt = earthPos(D);
+    // Direction from sun to marker for tick
+    const dx = pt.x - SUN_X, dy = pt.y - SUN_Y;
+    const len = Math.sqrt(dx*dx + dy*dy);
+    const nx = dx/len, ny = dy/len;
+    const tx1 = pt.x, ty1 = pt.y;
+    const tx2 = pt.x + nx*7, ty2 = pt.y + ny*7;
+    html += `<line x1="${tx1.toFixed(1)}" y1="${ty1.toFixed(1)}" x2="${tx2.toFixed(1)}" y2="${ty2.toFixed(1)}"
+      stroke="var(--orbit-line)" stroke-width="1.2" opacity="0.5"/>`;
+    // Label offset further out
+    const lx = pt.x + nx * 18, ly = pt.y + ny * 18;
+    html += `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle"
+      dominant-baseline="middle" font-size="10" fill="#c8b89a" opacity="0.75"
+      font-family="var(--font-sans)">${MONTHS[m]}</text>`;
+  }
 
   // Perihelion / Aphelion labels
-  const periX = CX - A;
-  const apeX = CX + A;
-  html += `<text x="${periX}" y="${CY + B_AXIS + 18}" text-anchor="middle" font-size="10" fill="var(--fg-faint)" font-family="var(--font-sans)">Perihelion (Jan)</text>`;
-  html += `<text x="${apeX}" y="${CY + B_AXIS + 18}" text-anchor="middle" font-size="10" fill="var(--fg-faint)" font-family="var(--font-sans)">Aphelion (Jul)</text>`;
+  const periX = SUN_X - OA * (1 - OE*OE) / (1 + OE);
+  const apeX  = SUN_X + OA * (1 - OE*OE) / (1 - OE);
 
-  // Sun at focus (offset from center toward perihelion)
-  const sunX = CX - FOCUS_OFFSET;
-  html += `<circle cx="${sunX}" cy="${CY}" r="16" fill="var(--sun-glow)" opacity="0.5"/>`;
-  html += `<circle cx="${sunX}" cy="${CY}" r="10" fill="var(--sun-gold)"/>`;
-  html += `<text x="${sunX}" y="${CY + 28}" text-anchor="middle" font-size="10" fill="var(--sun-gold)" font-weight="600" font-family="var(--font-sans)">Sun</text>`;
+  html += `<text x="${(periX - 14).toFixed(1)}" y="${(SUN_Y + 22).toFixed(1)}" text-anchor="middle"
+    font-size="9.5" fill="#888" font-family="var(--font-sans)">Perihelion</text>`;
+  html += `<text x="${(apeX + 14).toFixed(1)}" y="${(SUN_Y + 22).toFixed(1)}" text-anchor="middle"
+    font-size="9.5" fill="#888" font-family="var(--font-sans)">Aphelion</text>`;
 
-  // Center marker for mean sun concept
-  html += `<circle cx="${CX}" cy="${CY}" r="4" fill="var(--mean-sun)" opacity="0.5"/>`;
-  html += `<text x="${CX}" y="${CY - 10}" text-anchor="middle" font-size="9" fill="var(--mean-sun)" font-family="var(--font-sans)" opacity="0.7">center</text>`;
+  // Sun
+  html += `<circle cx="${SUN_X}" cy="${SUN_Y}" r="22" fill="#3d2a00" opacity="0.8"/>`;
+  html += `<circle cx="${SUN_X}" cy="${SUN_Y}" r="16" fill="#e6a817"/>`;
+  html += `<text x="${SUN_X}" y="${SUN_Y + 30}" text-anchor="middle"
+    font-size="11" fill="var(--sun-gold)" font-weight="600" font-family="var(--font-sans)">Sun</text>`;
 
-  // Groups for dynamic elements
-  html += `<g id="orbit-earth"></g>`;
-  html += `<g id="orbit-mean"></g>`;
-  html += `<g id="orbit-lines"></g>`;
+  // Dynamic layer
+  html += `<g id="orbit-dyn"></g>`;
 
-  orbitSvg.innerHTML = html;
-}
-
-function earthPos(dayOfYear) {
-  // Angle: 0 = perihelion (leftmost), going CCW
-  const theta = ((dayOfYear - 3) / 365) * 2 * Math.PI;
-  // Ellipse parametric (approximate Kepler with visual exaggeration)
-  const r = A * (1 - ECCENTRICITY_VISUAL * ECCENTRICITY_VISUAL) / (1 + ECCENTRICITY_VISUAL * Math.cos(theta));
-  const sunX = CX - FOCUS_OFFSET;
-  const x = sunX + r * Math.cos(theta + Math.PI); // +PI so perihelion is on left
-  const y = CY - r * Math.sin(theta + Math.PI);
-  return { x, y };
-}
-
-function meanSunAngle(dayOfYear) {
-  // Uniform motion around the orbit
-  return ((dayOfYear - 3) / 365) * 2 * Math.PI;
-}
-
-function updateOrbit(day) {
-  const pos = earthPos(day);
-
-  // Earth
-  const earthG = document.getElementById('orbit-earth');
-  earthG.innerHTML = `
-    <circle cx="${pos.x}" cy="${pos.y}" r="8" fill="var(--earth-blue)" opacity="0.15"/>
-    <circle cx="${pos.x}" cy="${pos.y}" r="5" fill="var(--earth-blue)"/>
-  `;
-
-  // Mean sun position (on circular path at uniform speed)
-  const mAngle = meanSunAngle(day);
-  const meanR = (A + B_AXIS) / 2; // circular approximation
-  const meanX = CX + meanR * Math.cos(mAngle + Math.PI);
-  const meanY = CY - meanR * Math.sin(mAngle + Math.PI);
-  const meanG = document.getElementById('orbit-mean');
-  meanG.innerHTML = `
-    <circle cx="${meanX}" cy="${meanY}" r="4" fill="none" stroke="var(--mean-sun)" stroke-width="1.5" stroke-dasharray="2 2"/>
-    <text x="${meanX}" y="${meanY - 10}" text-anchor="middle" font-size="9" fill="var(--mean-sun)" font-family="var(--font-sans)">mean</text>
-  `;
-
-  // Line from sun to earth
-  const sunX = CX - FOCUS_OFFSET;
-  const linesG = document.getElementById('orbit-lines');
-  linesG.innerHTML = `
-    <line x1="${sunX}" y1="${CY}" x2="${pos.x}" y2="${pos.y}" stroke="var(--sun-gold)" stroke-width="0.8" opacity="0.4"/>
-  `;
-}
-
-// ── Equation of Time chart ──
-const eotSvg = document.getElementById('eot-svg');
-
-function drawEotChart() {
-  const W = 710, H = 200;
-  const padL = 45, padR = 15, padT = 20, padB = 30;
-  const chartW = W - padL - padR;
-  const chartH = H - padT - padB;
-  const midY = padT + chartH / 2;
-
-  let html = '';
-
-  // Grid
-  html += `<line x1="${padL}" y1="${midY}" x2="${W - padR}" y2="${midY}" stroke="var(--border)" stroke-width="1"/>`;
-
-  // Y axis labels (minutes)
-  for (let m = -15; m <= 15; m += 5) {
-    if (m === 0) continue;
-    const y = midY - (m / 16) * (chartH / 2);
-    html += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="var(--border)" stroke-width="0.5" opacity="0.5"/>`;
-    html += `<text x="${padL - 6}" y="${y + 4}" text-anchor="end" font-size="10" font-family="var(--font-mono)" fill="var(--fg-faint)">${m > 0 ? '+' : ''}${m}</text>`;
-  }
-  html += `<text x="${padL - 6}" y="${midY + 4}" text-anchor="end" font-size="10" font-family="var(--font-mono)" fill="var(--fg-faint)">0</text>`;
-
-  // Y axis title
-  html += `<text x="12" y="${midY}" text-anchor="middle" font-size="10" fill="var(--fg-dim)" font-family="var(--font-sans)" transform="rotate(-90 12 ${midY})">minutes</text>`;
-
-  // Month labels
-  let cumDay = 0;
-  for (let m = 0; m < 12; m++) {
-    const x = padL + (cumDay / 365) * chartW;
-    html += `<line x1="${x}" y1="${padT}" x2="${x}" y2="${H - padB}" stroke="var(--border)" stroke-width="0.5" opacity="0.3"/>`;
-    const midX = padL + ((cumDay + MONTH_DAYS[m] / 2) / 365) * chartW;
-    html += `<text x="${midX}" y="${H - padB + 16}" text-anchor="middle" font-size="10" fill="var(--fg-faint)" font-family="var(--font-sans)">${MONTHS[m]}</text>`;
-    cumDay += MONTH_DAYS[m];
-  }
-
-  // EoT curve
-  let path = '';
-  for (let d = 0; d <= 364; d++) {
-    const x = padL + (d / 364) * chartW;
-    const eot = equationOfTime(d);
-    const y = midY - (eot / 16) * (chartH / 2);
-    path += (d === 0 ? 'M' : 'L') + `${x.toFixed(1)},${y.toFixed(1)}`;
-  }
-
-  // Fill area under/over zero
-  let fillPath = path + `L${(padL + chartW).toFixed(1)},${midY}L${padL},${midY}Z`;
-  html += `<path d="${fillPath}" fill="var(--sun-gold)" opacity="0.08"/>`;
-  html += `<path d="${path}" fill="none" stroke="var(--sun-gold)" stroke-width="2"/>`;
-
-  // Marker group
-  html += `<g id="eot-marker"></g>`;
-
-  // Labels for extremes
-  // ~Feb 12 (day 43) ≈ -14.2min, ~Nov 3 (day 306) ≈ +16.4min
-  const feb12x = padL + (43 / 364) * chartW;
-  const feb12y = midY - (equationOfTime(43) / 16) * (chartH / 2);
-  html += `<text x="${feb12x}" y="${feb12y + 14}" text-anchor="middle" font-size="9" fill="var(--fg-dim)" font-family="var(--font-sans)">≈−14 min</text>`;
-
-  const nov3x = padL + (306 / 364) * chartW;
-  const nov3y = midY - (equationOfTime(306) / 16) * (chartH / 2);
-  html += `<text x="${nov3x}" y="${nov3y - 8}" text-anchor="middle" font-size="9" fill="var(--fg-dim)" font-family="var(--font-sans)">≈+16 min</text>`;
-
-  eotSvg.innerHTML = html;
-}
-
-function updateEotMarker(day) {
-  const W = 710, H = 200;
-  const padL = 45, padR = 15, padT = 20, padB = 30;
-  const chartW = W - padL - padR;
-  const chartH = H - padT - padB;
-  const midY = padT + chartH / 2;
-
-  const x = padL + (day / 364) * chartW;
-  const eot = equationOfTime(day);
-  const y = midY - (eot / 16) * (chartH / 2);
-
-  const marker = document.getElementById('eot-marker');
-  marker.innerHTML = `
-    <line x1="${x}" y1="${padT}" x2="${x}" y2="${H - padB}" stroke="var(--earth-blue)" stroke-width="1.5" opacity="0.4"/>
-    <circle cx="${x}" cy="${y}" r="4" fill="var(--earth-blue)"/>
-  `;
-}
-
-// ── Clock faces ──
-function drawClockFace(svgId, handColor) {
-  const svg = document.getElementById(svgId);
-  const C = 60, R = 52;
-  let html = '';
-  html += `<circle cx="${C}" cy="${C}" r="${R}" fill="none" stroke="var(--border)" stroke-width="1.5"/>`;
-  // Hour ticks
-  for (let h = 0; h < 12; h++) {
-    const angle = (h / 12) * 2 * Math.PI - Math.PI / 2;
-    const x1 = C + (R - 6) * Math.cos(angle);
-    const y1 = C + (R - 6) * Math.sin(angle);
-    const x2 = C + R * Math.cos(angle);
-    const y2 = C + R * Math.sin(angle);
-    const thick = (h % 3 === 0) ? 1.5 : 0.8;
-    html += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--fg)" stroke-width="${thick}" opacity="0.4"/>`;
-  }
-  // 12 label
-  html += `<text x="${C}" y="${C - R + 18}" text-anchor="middle" font-size="10" fill="var(--fg-faint)" font-family="var(--font-mono)">12</text>`;
-  html += `<g id="${svgId}-hands"></g>`;
   svg.innerHTML = html;
 }
 
-function setClockHands(svgId, hours, minutes, color) {
-  const C = 60;
-  const handsG = document.getElementById(`${svgId}-hands`);
+// ── Update orbit dynamic layer ──
+function updateOrbit(D) {
+  const ep = earthPos(D);
+  const mp = meanPos(D);
 
-  // Hour hand
-  const hAngle = ((hours % 12 + minutes / 60) / 12) * 2 * Math.PI - Math.PI / 2;
-  const hx = C + 28 * Math.cos(hAngle);
-  const hy = C + 28 * Math.sin(hAngle);
+  let html = '';
 
-  // Minute hand
-  const mAngle = (minutes / 60) * 2 * Math.PI - Math.PI / 2;
-  const mx = C + 40 * Math.cos(mAngle);
-  const my = C + 40 * Math.sin(mAngle);
+  // Angular wedge between real and mean Earth as seen from the Sun
+  const angleReal = Math.atan2(SUN_Y - ep.y, ep.x - SUN_X);
+  const angleMean = Math.atan2(SUN_Y - mp.y, mp.x - SUN_X);
 
-  handsG.innerHTML = `
-    <line x1="${C}" y1="${C}" x2="${hx}" y2="${hy}" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="${C}" y1="${C}" x2="${mx}" y2="${my}" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>
-    <circle cx="${C}" cy="${C}" r="2.5" fill="${color}"/>
-  `;
+  // Draw the wedge (shaded sector)
+  const wedgeR = 55;
+  const ax1 = SUN_X + wedgeR * Math.cos(angleReal);
+  const ay1 = SUN_Y - wedgeR * Math.sin(angleReal);
+  const ax2 = SUN_X + wedgeR * Math.cos(angleMean);
+  const ay2 = SUN_Y - wedgeR * Math.sin(angleMean);
+
+  // Determine sweep direction and arc flag
+  let dAngle = angleMean - angleReal;
+  // Normalize to (-π, π]
+  while (dAngle >  Math.PI) dAngle -= 2 * Math.PI;
+  while (dAngle < -Math.PI) dAngle += 2 * Math.PI;
+  const largeArc = Math.abs(dAngle) > Math.PI ? 1 : 0;
+  const sweep = dAngle > 0 ? 1 : 0;
+
+  if (Math.abs(dAngle) > 0.002) {
+    html += `<path d="M${SUN_X},${SUN_Y} L${ax1.toFixed(1)},${ay1.toFixed(1)}
+      A${wedgeR},${wedgeR} 0 ${largeArc},${sweep} ${ax2.toFixed(1)},${ay2.toFixed(1)} Z"
+      fill="white" opacity="0.07"/>`;
+    // Arc outline
+    html += `<path d="M${ax1.toFixed(1)},${ay1.toFixed(1)}
+      A${wedgeR},${wedgeR} 0 ${largeArc},${sweep} ${ax2.toFixed(1)},${ay2.toFixed(1)}"
+      fill="none" stroke="white" stroke-width="1" opacity="0.25"/>`;
+  }
+
+  // Line: Sun → mean Earth
+  html += `<line x1="${SUN_X}" y1="${SUN_Y}" x2="${mp.x.toFixed(1)}" y2="${mp.y.toFixed(1)}"
+    stroke="var(--mean-sun)" stroke-width="1.2" stroke-dasharray="5 3" opacity="0.5"/>`;
+
+  // Line: Sun → real Earth
+  html += `<line x1="${SUN_X}" y1="${SUN_Y}" x2="${ep.x.toFixed(1)}" y2="${ep.y.toFixed(1)}"
+    stroke="var(--sun-gold)" stroke-width="1.2" opacity="0.5"/>`;
+
+  // Mean Earth
+  html += `<circle cx="${mp.x.toFixed(1)}" cy="${mp.y.toFixed(1)}" r="9"
+    fill="none" stroke="var(--mean-sun)" stroke-width="2" stroke-dasharray="3 2" opacity="0.85"/>`;
+  html += `<text x="${mp.x.toFixed(1)}" y="${(mp.y - 14).toFixed(1)}" text-anchor="middle"
+    font-size="10" fill="var(--mean-sun)" font-family="var(--font-sans)" opacity="0.9">mean</text>`;
+
+  // Real Earth
+  html += `<circle cx="${ep.x.toFixed(1)}" cy="${ep.y.toFixed(1)}" r="11"
+    fill="var(--earth-blue)" opacity="0.2"/>`;
+  html += `<circle cx="${ep.x.toFixed(1)}" cy="${ep.y.toFixed(1)}" r="7"
+    fill="var(--earth-blue)"/>`;
+  html += `<text x="${ep.x.toFixed(1)}" y="${(ep.y + 20).toFixed(1)}" text-anchor="middle"
+    font-size="10" fill="#7fb3d3" font-family="var(--font-sans)">Earth</text>`;
+
+  document.getElementById('orbit-dyn').innerHTML = html;
 }
 
-// ── Main update ──
-function update(day) {
-  const eot = equationOfTime(day);
-  const dist = earthSunDist(day) * 149.6; // Mkm
-  const devSec = dayLengthDev(day);
-  const dateStr = dayToString(day);
+// ── Update stats ──
+function updateStats(D) {
+  const eot = eotMinutes(D);
+  const dist = earthSunAU(D) * 149.6;
+  const absEot = Math.abs(eot);
 
-  // Slider label
-  document.getElementById('slider-date').textContent = dateStr;
+  document.getElementById('stat-date').textContent = dayToStr(D);
+  document.getElementById('day-label').textContent = dayToStr(D);
 
-  // Info panel
-  document.getElementById('info-date').textContent = dateStr;
-
-  const absEot = Math.abs(eot).toFixed(1);
-  const eotSign = eot >= 0 ? '+' : '−';
-  const eotClass = eot > 0.5 ? 'diff-pos' : (eot < -0.5 ? 'diff-neg' : 'diff-zero');
-  document.getElementById('info-eot').innerHTML = `<span class="${eotClass}">${eotSign}${absEot} min</span>`;
-
-  if (Math.abs(eot) < 0.3) {
-    document.getElementById('info-eot-explain').textContent = 'Sundial and clock nearly agree';
+  if (absEot < 0.4) {
+    document.getElementById('stat-gap').innerHTML = `<span class="same">Aligned</span>`;
+    document.getElementById('stat-gap-desc').textContent = 'Both suns at the same position.';
   } else if (eot > 0) {
-    document.getElementById('info-eot-explain').textContent = `Sundial is ${absEot} min ahead of mean-time clock`;
+    document.getElementById('stat-gap').innerHTML =
+      `<span class="ahead">${absEot.toFixed(1)} min ahead</span>`;
+    document.getElementById('stat-gap-desc').textContent =
+      `Real Sun has swept ${(absEot * 0.25).toFixed(1)}° more than the mean Sun — solar noon came early.`;
   } else {
-    document.getElementById('info-eot-explain').textContent = `Sundial is ${absEot} min behind mean-time clock`;
+    document.getElementById('stat-gap').innerHTML =
+      `<span class="behind">${absEot.toFixed(1)} min behind</span>`;
+    document.getElementById('stat-gap-desc').textContent =
+      `Real Sun has swept ${(absEot * 0.25).toFixed(1)}° less than the mean Sun — solar noon will come late.`;
   }
 
-  document.getElementById('info-dist').textContent = dist.toFixed(1) + ' Mkm';
-  const periDay = 3;
-  const distFromPeri = Math.min(Math.abs(day - periDay), Math.abs(day - periDay - 365));
-  if (distFromPeri < 40) {
-    document.getElementById('info-speed').textContent = 'Near perihelion — Earth moves faster';
-  } else if (distFromPeri > 140 && distFromPeri < 220) {
-    document.getElementById('info-speed').textContent = 'Near aphelion — Earth moves slower';
+  document.getElementById('stat-dist').textContent = dist.toFixed(1) + ' Mkm';
+  const periDist = Math.min(Math.abs(D - 3), Math.abs(D - 3 + 365));
+  if (periDist < 50) {
+    document.getElementById('stat-dist-desc').textContent =
+      'Near perihelion — Earth moves fastest, real Sun races ahead.';
+  } else if (D > 155 && D < 205) {
+    document.getElementById('stat-dist-desc').textContent =
+      'Near aphelion — Earth moves slowest, real Sun falls behind.';
   } else {
-    document.getElementById('info-speed').textContent = 'Intermediate distance from Sun';
+    document.getElementById('stat-dist-desc').textContent =
+      'Intermediate orbital speed.';
   }
-
-  const totalSec = 86400 + devSec;
-  const dh = Math.floor(totalSec / 3600);
-  const dm = Math.floor((totalSec % 3600) / 60);
-  const ds = Math.round(totalSec % 60);
-  document.getElementById('info-day-len').textContent = `${dh}h ${dm}m ${ds}s`;
-
-  // Orbit
-  updateOrbit(day);
-
-  // EoT chart marker
-  updateEotMarker(day);
-
-  // Clocks — mean time is always 12:00, apparent solar time = 12:00 + EoT
-  const apparentMin = eot; // minutes offset from noon
-  const appH = 12;
-  const appM = apparentMin;
-  const appTotalMin = 720 + apparentMin; // total minutes from midnight
-  const appHour = Math.floor(appTotalMin / 60);
-  const appMinute = appTotalMin % 60;
-
-  setClockHands('clock-mean', 12, 0, 'var(--fg)');
-  setClockHands('clock-apparent', appHour, appMinute, 'var(--sun-gold)');
-
-  document.getElementById('mean-time').textContent = '12:00:00';
-  const appMinInt = Math.floor(Math.abs(appMinute));
-  const appSecInt = Math.round((Math.abs(appMinute) - appMinInt) * 60);
-  const appSign = apparentMin >= 0 ? '' : '-';
-  // Format apparent time
-  const trueH = Math.floor((720 + apparentMin) / 60);
-  const trueM = Math.abs(Math.floor(apparentMin % 60));
-  const trueS = Math.round(Math.abs((apparentMin % 1) * 60));
-  const fmt = (n) => String(n).padStart(2, '0');
-  if (apparentMin >= 0) {
-    document.getElementById('apparent-time').textContent = `12:${fmt(Math.floor(apparentMin))}:${fmt(Math.round((apparentMin % 1) * 60))}`;
-  } else {
-    const totalApp = 720 + apparentMin;
-    const aH = Math.floor(totalApp / 60);
-    const aM = Math.floor(totalApp % 60);
-    const aS = Math.round(((totalApp % 60) - aM) * 60);
-    document.getElementById('apparent-time').textContent = `${aH}:${fmt(aM)}:${fmt(Math.abs(aS))}`;
-  }
-
-  // Diff display
-  const diffEl = document.getElementById('clock-diff');
-  const diffClass = eot > 0.5 ? 'diff-pos' : (eot < -0.5 ? 'diff-neg' : 'diff-zero');
-  diffEl.className = `diff-val ${diffClass}`;
-  diffEl.textContent = `${eotSign}${absEot} min`;
 }
 
 // ── Initialize ──
-drawOrbit();
-drawEotChart();
-drawClockFace('clock-mean', 'var(--fg)');
-drawClockFace('clock-apparent', 'var(--sun-gold)');
-update(0);
+drawOrbitBG();
 
-// Slider
-document.getElementById('day-slider').addEventListener('input', function() {
-  update(parseInt(this.value));
-});
+const daySlider = document.getElementById('day-slider');
+
+function update() {
+  const D = parseInt(daySlider.value);
+  updateOrbit(D);
+  updateStats(D);
+}
+
+daySlider.addEventListener('input', update);
+update();
 </script>
 </body>
 </html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>θ Quiz</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: "Cambria Math", Cambria, Georgia, serif;
+    color: #2a2a2a;
+    background: #fff;
+    font-size: 17px;
+  }
+
+  .quiz {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 28px 24px;
+  }
+
+  .q {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .q-prompt {
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  .q-prompt code {
+    font-family: "IBM Plex Mono", Menlo, monospace;
+    font-size: 0.88em;
+    background: #faf5f8;
+    padding: 1px 6px;
+    border-radius: 3px;
+    color: #7b5e70;
+    border: 1px solid #f0e4ec;
+  }
+
+  .q-buttons {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .q-btn {
+    font-family: "Montserrat", sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 5px 14px;
+    border: 2px solid #e0d5dc;
+    border-radius: 6px;
+    background: #fdfbfc;
+    color: #5c4f5e;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .q-btn:hover:not(.locked) {
+    border-color: #d4829c;
+    background: #fdf2f5;
+  }
+
+  .q-btn.locked { cursor: default; opacity: 0.45; }
+  .q-btn.correct { border-color: #3cb371; background: #eef8f0; color: #2d7a4a; opacity: 1; }
+  .q-btn.wrong { border-color: #d9534f; background: #fef2f2; color: #a33; opacity: 1; }
+
+  .q-feedback {
+    font-size: 0.82rem;
+    margin-left: 4px;
+    display: inline;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .q-feedback.show { opacity: 1; }
+  .q-feedback.right { color: #3cb371; }
+  .q-feedback.nope { color: #d9534f; }
+</style>
+</head>
+<body>
+<div class="quiz">
+
+  <div class="q" id="q1">
+    <div class="q-prompt">If <code>θ &gt; 0</code>, the client clock is…</div>
+    <div class="q-buttons">
+      <button class="q-btn" onclick="answer(1,'slow',this)">Slow</button>
+      <button class="q-btn" onclick="answer(1,'fast',this)">Fast</button>
+    </div>
+    <span class="q-feedback" id="fb1"></span>
+  </div>
+
+  <div class="q" id="q2">
+    <div class="q-prompt">If <code>θ &lt; 0</code>, the client clock is…</div>
+    <div class="q-buttons">
+      <button class="q-btn" onclick="answer(2,'slow',this)">Slow</button>
+      <button class="q-btn" onclick="answer(2,'fast',this)">Fast</button>
+    </div>
+    <span class="q-feedback" id="fb2"></span>
+  </div>
+
+</div>
+<script>
+const answers = { 1: 'slow', 2: 'fast' };
+const done = {};
+
+function answer(q, choice, btn) {
+  if (done[q]) return;
+  done[q] = true;
+
+  const buttons = btn.parentElement.querySelectorAll('.q-btn');
+  const fb = document.getElementById(`fb${q}`);
+  const correct = choice === answers[q];
+
+  buttons.forEach(b => b.classList.add('locked'));
+
+  if (correct) {
+    btn.classList.add('correct');
+    fb.textContent = '✓';
+    fb.className = 'q-feedback show right';
+  } else {
+    btn.classList.add('wrong');
+    buttons.forEach(b => { if (!b.classList.contains('wrong')) b.classList.add('correct'); });
+    fb.textContent = '✗';
+    fb.className = 'q-feedback show nope';
+  }
+}
+</script>
+</body>
+</html>

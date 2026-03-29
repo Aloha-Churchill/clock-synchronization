@@ -5,14 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Learning Flow</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap');
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
-    font-family: "Cambria Math", Cambria, Georgia, serif;
-    color: #2a2a2a;
-    background: #fff;
+    font-family: 'Source Sans 3', 'Helvetica Neue', sans-serif;
+    color: #2c2418;
+    background: #fdfbfc;
+    min-height: 100vh;
   }
 
   .flow {
@@ -23,12 +24,12 @@
   }
 
   .flow-title {
-    font-family: "Montserrat", sans-serif;
+    font-family: 'Playfair Display', Georgia, serif;
     font-size: 1.6rem;
     font-weight: 700;
     text-align: center;
     margin-bottom: 40px;
-    color: #1a1a1a;
+    color: #2c2418;
   }
 
   /* ── Zone subheaders ── */
@@ -40,7 +41,7 @@
     padding-left: 48px;
   }
   .zone-header span {
-    font-family: "Montserrat", sans-serif;
+    font-family: 'Source Sans 3', 'Helvetica Neue', sans-serif;
     font-size: 0.7rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -51,7 +52,7 @@
     content: '';
     flex: 1;
     height: 1px;
-    background: #e8e8e8;
+    background: #d4c5a9;
   }
   .zone-header.zh-rose span { color: #d4829c; }
   .zone-header.zh-amber span { color: #d4a04a; }
@@ -107,16 +108,16 @@
   .step-body { padding-bottom: 32px; }
 
   .step-name {
-    font-family: "Montserrat", sans-serif;
+    font-family: 'Source Sans 3', 'Helvetica Neue', sans-serif;
     font-size: 1.1rem;
     font-weight: 600;
-    color: #2a2a2a;
+    color: #2c2418;
     line-height: 1.35;
   }
 
   .step-desc {
     font-size: 0.95rem;
-    color: #999;
+    color: #a89a88;
     margin-top: 4px;
     line-height: 1.5;
   }
@@ -137,7 +138,7 @@
   <div class="step rose">
     <div class="step-rail"><div class="step-dot"></div><div class="step-line"></div></div>
     <div class="step-body">
-      <div class="step-name">Coordinated Universal Time: UTC</div>
+      <div class="step-name">Coordinated Universal Time (UTC)</div>
       <div class="step-desc">What is the time we agree upon?</div>
     </div>
   </div>
@@ -163,7 +164,7 @@
   <div class="step amber amber-to-green">
     <div class="step-rail"><div class="step-dot"></div><div class="step-line"></div></div>
     <div class="step-body">
-      <div class="step-name">Network Time Protocol: NTP</div>
+      <div class="step-name">Network Time Protocol (NTP)</div>
       <div class="step-desc">What is NTP and how does it work?</div>
     </div>
   </div>
@@ -181,7 +182,7 @@
   <div class="step green">
     <div class="step-rail"><div class="step-dot"></div><div class="step-line"></div></div>
     <div class="step-body">
-      <div class="step-name">Lamport & Vector Clocks</div>
+      <div class="step-name">Lamport Clocks</div>
       <div class="step-desc">What are Lamport and vector clocks, and how do they work to ensure event ordering?</div>
     </div>
   </div>

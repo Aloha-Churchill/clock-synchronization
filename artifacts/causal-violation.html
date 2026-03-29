@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build a Causal Violation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FAFAF8;
+    --bg2: #F1EFE8;
+    --bg3: #E8E6DF;
+    --text: #2C2C2A;
+    --text2: #5F5E5A;
+    --text3: #888780;
+    --border: rgba(0,0,0,0.1);
+    --border2: rgba(0,0,0,0.2);
+    --blue50: #E6F1FB; --blue200: #85B7EB; --blue400: #378ADD; --blue600: #185FA5; --blue800: #0C447C;
+    --teal50: #E1F5EE; --teal200: #5DCAA5; --teal600: #0F6E56; --teal800: #085041;
+    --purple50: #EEEDFE; --purple200: #AFA9EC; --purple600: #534AB7; --purple800: #3C3489;
+    --amber50: #FAEEDA; --amber400: #EF9F27; --amber600: #BA7517; --amber800: #633806;
+    --red50: #FCEBEB; --red400: #E24B4A; --red600: #A32D2D; --red800: #791F1F;
+    --font: 'DM Sans', system-ui, sans-serif;
+    --mono: 'DM Mono', monospace;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1A1A18;
+      --bg2: #2C2C2A;
+      --bg3: #3D3D3A;
+      --text: #E8E6DF;
+      --text2: #B4B2A9;
+      --text3: #888780;
+      --border: rgba(255,255,255,0.1);
+      --border2: rgba(255,255,255,0.2);
+      --blue50: #0C447C; --blue200: #378ADD; --blue800: #E6F1FB;
+      --teal50: #085041; --teal200: #1D9E75; --teal800: #E1F5EE;
+      --purple50: #3C3489; --purple200: #7F77DD; --purple800: #EEEDFE;
+      --amber50: #633806; --amber400: #EF9F27; --amber600: #FAC775; --amber800: #FAEEDA;
+      --red50: #501313; --red400: #F09595; --red600: #F7C1C1; --red800: #FCEBEB;
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; padding: 24px; max-width: 740px; margin: 0 auto; }
+
+  .challenge { background: var(--bg2); border-radius: var(--radius-lg); padding: 14px 18px; margin-bottom: 16px; font-size: 14px; line-height: 1.6; }
+  .challenge .goal { font-weight: 500; color: var(--red600); }
+
+  .steps-bar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+  .step-pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 16px; font-size: 12px; font-family: var(--font); transition: all .2s; border: 1px solid transparent; }
+  .step-pill.active { font-weight: 500; }
+  .step-pill.done { opacity: 0.45; }
+  .step-num { width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 500; flex-shrink: 0; }
+
+  .toolbar { min-height: 32px; margin-bottom: 8px; font-size: 13px; color: var(--text2); display: flex; align-items: center; }
+
+  .canvas-wrap { position: relative; border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; background: var(--bg); }
+  .canvas-wrap svg { display: block; cursor: crosshair; }
+
+  .btn-row { margin-top: 10px; display: flex; gap: 8px; }
+  .ev-btn { padding: 5px 14px; font-size: 12px; font-family: var(--font); cursor: pointer; border-radius: var(--radius); border: 0.5px solid var(--border2); background: transparent; color: var(--text2); transition: background .12s, transform .1s; }
+  .ev-btn:hover { background: var(--bg2); }
+  .ev-btn:active { transform: scale(0.97); }
+  .ev-btn:disabled { opacity: 0.3; cursor: default; pointer-events: none; }
+
+  #feedback { margin-top: 12px; min-height: 20px; }
+  .fb-card { border-radius: var(--radius-lg); padding: 14px 18px; line-height: 1.6; }
+  .fb-card h3 { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+  .fb-card p { font-size: 13px; }
+  .fb-fail { background: var(--red50); }
+  .fb-fail h3 { color: var(--red600); }
+  .fb-fail p { color: var(--red800); }
+  .fb-hint { background: var(--amber50); }
+  .fb-hint h3 { color: var(--amber600); }
+  .fb-hint p { color: var(--amber800); }
+</style>
+</head>
+<body>
+
+<div class="challenge">
+  Server A wants to ask Server B and C a question, but the message travels at different speeds. B sends back a response.
+  <span class="goal">Place events so that C sees B's response before A's question.</span>
+</div>
+
+<div class="steps-bar" id="steps-bar"></div>
+<div class="toolbar" id="tool-bar"></div>
+
+<div class="canvas-wrap">
+  <svg id="tl-svg" width="100%" viewBox="0 0 680 400"></svg>
+</div>
+
+<div id="feedback"></div>
+
+<div class="btn-row">
+  <button class="ev-btn" onclick="undoLast()" id="undo-btn" disabled>Undo</button>
+  <button class="ev-btn" onclick="resetAll()">Reset</button>
+</div>
+
+<script>
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const servers = [
+  { label: 'Server A', x: 160, color: 'var(--blue600)', bg: 'var(--blue50)', dark: 'var(--blue800)' },
+  { label: 'Server B', x: 370, color: 'var(--teal600)', bg: 'var(--teal50)', dark: 'var(--teal800)' },
+  { label: 'Server C', x: 560, color: 'var(--purple600)', bg: 'var(--purple50)', dark: 'var(--purple800)' },
+];
+const TOP = 60, BOT = 380, ROWS = 12;
+const rowH = (BOT - TOP) / ROWS;
+function yFor(row) { return TOP + row * rowH + rowH / 2; }
+function rowFor(y) { return Math.max(0, Math.min(ROWS - 1, Math.round((y - TOP - rowH / 2) / rowH))); }
+
+const STEPS = [
+  { id: 'a-send-q', label: 'A sends question', desc: 'Click on Server A\u2019s timeline to place when A sends the question', server: 0, type: 'send', msgType: 'question' },
+  { id: 'b-recv-q', label: 'B receives question', desc: 'Click on Server B\u2019s timeline for when B receives A\u2019s question', server: 1, type: 'recv', msgType: 'question', from: 'a-send-q' },
+  { id: 'b-send-a', label: 'B sends response', desc: 'Click on Server B\u2019s timeline for when B sends its response (must be after receiving)', server: 1, type: 'send', msgType: 'answer' },
+  { id: 'c-recv-a', label: 'C gets B\u2019s response', desc: 'Click on Server C\u2019s timeline for when C receives B\u2019s response', server: 2, type: 'recv', msgType: 'answer', from: 'b-send-a' },
+  { id: 'c-recv-q', label: 'C gets A\u2019s question', desc: 'Click on Server C\u2019s timeline for when C receives A\u2019s question (the slow path)', server: 2, type: 'recv', msgType: 'question', from: 'a-send-q' },
+];
+
+let placed = {};
+let currentStep = 0;
+let history = [];
+
+const serverColors = ['var(--blue600)', 'var(--teal600)', 'var(--purple600)'];
+const serverBgs = ['var(--blue50)', 'var(--teal50)', 'var(--purple50)'];
+
+function renderSteps() {
+  const bar = document.getElementById('steps-bar');
+  bar.innerHTML = '';
+  STEPS.forEach((s, i) => {
+    const pill = document.createElement('span');
+    pill.className = 'step-pill' + (i === currentStep ? ' active' : '') + (i < currentStep ? ' done' : '');
+    pill.style.background = i === currentStep ? serverBgs[s.server] : (i < currentStep ? 'var(--bg3)' : 'transparent');
+    pill.style.color = i === currentStep ? serverColors[s.server] : 'var(--text3)';
+    if (i === currentStep) pill.style.borderColor = serverColors[s.server];
+
+    const num = document.createElement('span');
+    num.className = 'step-num';
+    if (i < currentStep) {
+      num.style.background = 'var(--bg3)'; num.style.color = 'var(--text3)';
+      num.innerHTML = '<svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5l2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+    } else {
+      num.style.background = i === currentStep ? serverColors[s.server] : 'var(--border)';
+      num.style.color = i === currentStep ? 'var(--bg)' : 'var(--text3)';
+      num.textContent = i + 1;
+    }
+    pill.appendChild(num);
+    const txt = document.createElement('span');
+    txt.textContent = s.label;
+    pill.appendChild(txt);
+    bar.appendChild(pill);
+  });
+
+  const toolbar = document.getElementById('tool-bar');
+  toolbar.textContent = currentStep < STEPS.length ? STEPS[currentStep].desc : '';
+}
+
+function renderSVG() {
+  const svg = document.getElementById('tl-svg');
+  svg.innerHTML = '';
+  const defs = document.createElementNS(SVG_NS, 'defs');
+  defs.innerHTML = '<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>';
+  svg.appendChild(defs);
+
+  servers.forEach((s, i) => {
+    const r = document.createElementNS(SVG_NS, 'rect');
+    r.setAttribute('x', s.x - 45); r.setAttribute('y', 10);
+    r.setAttribute('width', 90); r.setAttribute('height', 30); r.setAttribute('rx', 8);
+    r.setAttribute('fill', s.bg); r.setAttribute('stroke', s.color); r.setAttribute('stroke-width', '0.5');
+    svg.appendChild(r);
+    const t = document.createElementNS(SVG_NS, 'text');
+    t.setAttribute('x', s.x); t.setAttribute('y', 29);
+    t.setAttribute('text-anchor', 'middle'); t.setAttribute('dominant-baseline', 'central');
+    t.setAttribute('font-size', '13'); t.setAttribute('font-weight', '500');
+    t.setAttribute('fill', s.dark); t.setAttribute('font-family', 'var(--font)');
+    t.textContent = s.label;
+    svg.appendChild(t);
+
+    const line = document.createElementNS(SVG_NS, 'line');
+    line.setAttribute('x1', s.x); line.setAttribute('y1', TOP);
+    line.setAttribute('x2', s.x); line.setAttribute('y2', BOT);
+    line.setAttribute('stroke', 'var(--text3)'); line.setAttribute('stroke-width', '0.8'); line.setAttribute('opacity', '0.2');
+    svg.appendChild(line);
+
+    for (let row = 0; row < ROWS; row++) {
+      const y = yFor(row);
+      const tick = document.createElementNS(SVG_NS, 'line');
+      tick.setAttribute('x1', s.x - 3); tick.setAttribute('y1', y);
+      tick.setAttribute('x2', s.x + 3); tick.setAttribute('y2', y);
+      tick.setAttribute('stroke', 'var(--text3)'); tick.setAttribute('stroke-width', '0.5'); tick.setAttribute('opacity', '0.25');
+      svg.appendChild(tick);
+    }
+
+    if (currentStep < STEPS.length && STEPS[currentStep].server === i) {
+      const hl = document.createElementNS(SVG_NS, 'rect');
+      hl.setAttribute('x', s.x - 28); hl.setAttribute('y', TOP);
+      hl.setAttribute('width', 56); hl.setAttribute('height', BOT - TOP);
+      hl.setAttribute('fill', s.color); hl.setAttribute('opacity', '0.05'); hl.setAttribute('rx', 4);
+      svg.appendChild(hl);
+    }
+  });
+
+  const timeLabel = document.createElementNS(SVG_NS, 'text');
+  timeLabel.setAttribute('x', 14); timeLabel.setAttribute('y', 80);
+  timeLabel.setAttribute('font-size', '11'); timeLabel.setAttribute('fill', 'var(--text3)');
+  timeLabel.setAttribute('font-family', 'var(--font)');
+  timeLabel.setAttribute('transform', 'rotate(-90 14 80)');
+  timeLabel.textContent = 'Time';
+  svg.appendChild(timeLabel);
+  const timeArr = document.createElementNS(SVG_NS, 'line');
+  timeArr.setAttribute('x1', 18); timeArr.setAttribute('y1', 50);
+  timeArr.setAttribute('x2', 18); timeArr.setAttribute('y2', 115);
+  timeArr.setAttribute('stroke', 'var(--text3)'); timeArr.setAttribute('stroke-width', '0.8');
+  timeArr.setAttribute('marker-end', 'url(#arrow)');
+  svg.appendChild(timeArr);
+
+  STEPS.forEach((step) => {
+    if (!placed[step.id]) return;
+    const ev = placed[step.id];
+    const s = servers[step.server];
+    const y = yFor(ev.row);
+    const isQ = step.msgType === 'question';
+
+    if (step.from && placed[step.from]) {
+      const fromStep = STEPS.find(st => st.id === step.from);
+      const fromEv = placed[step.from];
+      const fromS = servers[fromStep.server];
+      const y1 = yFor(fromEv.row), y2 = y;
+      const lineColor = isQ ? 'var(--blue200)' : 'var(--amber400)';
+      const arrow = document.createElementNS(SVG_NS, 'line');
+      arrow.setAttribute('x1', fromS.x); arrow.setAttribute('y1', y1);
+      arrow.setAttribute('x2', s.x); arrow.setAttribute('y2', y2);
+      arrow.setAttribute('stroke', lineColor); arrow.setAttribute('stroke-width', '1.2');
+      arrow.setAttribute('stroke-dasharray', '5,3'); arrow.setAttribute('marker-end', 'url(#arrow)');
+      svg.appendChild(arrow);
+
+      const mx = (fromS.x + s.x) / 2, my = (y1 + y2) / 2 - 8;
+      const tag = document.createElementNS(SVG_NS, 'text');
+      tag.setAttribute('x', mx); tag.setAttribute('y', my);
+      tag.setAttribute('text-anchor', 'middle');
+      tag.setAttribute('font-size', '10'); tag.setAttribute('font-family', 'var(--font)');
+      tag.setAttribute('fill', isQ ? 'var(--blue600)' : 'var(--amber600)');
+      tag.textContent = isQ ? 'question' : 'response';
+      svg.appendChild(tag);
+    }
+
+    const circle = document.createElementNS(SVG_NS, 'circle');
+    circle.setAttribute('cx', s.x); circle.setAttribute('cy', y);
+    circle.setAttribute('r', 7);
+    circle.setAttribute('fill', isQ ? 'var(--blue600)' : 'var(--amber400)');
+    circle.setAttribute('stroke', isQ ? 'var(--blue800)' : 'var(--amber600)');
+    circle.setAttribute('stroke-width', '1');
+    svg.appendChild(circle);
+
+    const icon = document.createElementNS(SVG_NS, 'text');
+    icon.setAttribute('x', s.x); icon.setAttribute('y', y + 1);
+    icon.setAttribute('text-anchor', 'middle'); icon.setAttribute('dominant-baseline', 'central');
+    icon.setAttribute('font-size', '9'); icon.setAttribute('font-weight', '500');
+    icon.setAttribute('fill', 'var(--bg)'); icon.setAttribute('font-family', 'var(--font)');
+    icon.textContent = isQ ? '?' : '!';
+    svg.appendChild(icon);
+
+    const labelSide = step.server === 2 ? 1 : -1;
+    const label = document.createElementNS(SVG_NS, 'text');
+    label.setAttribute('x', s.x + labelSide * 20);
+    label.setAttribute('y', y + 1);
+    label.setAttribute('text-anchor', labelSide === -1 ? 'end' : 'start');
+    label.setAttribute('dominant-baseline', 'central');
+    label.setAttribute('font-size', '11'); label.setAttribute('font-family', 'var(--font)');
+    label.setAttribute('fill', 'var(--text3)');
+    label.textContent = step.type === 'send' ? 'send' : 'recv';
+    svg.appendChild(label);
+  });
+
+  if (currentStep < STEPS.length) {
+    const targetServer = STEPS[currentStep].server;
+    const s = servers[targetServer];
+    for (let row = 0; row < ROWS; row++) {
+      const y = yFor(row);
+      const hit = document.createElementNS(SVG_NS, 'circle');
+      hit.setAttribute('cx', s.x); hit.setAttribute('cy', y);
+      hit.setAttribute('r', 13); hit.setAttribute('fill', 'transparent');
+      hit.setAttribute('cursor', 'pointer');
+      hit.dataset.row = row; hit.dataset.server = targetServer;
+      svg.appendChild(hit);
+    }
+  }
+}
+
+function checkCompletion() {
+  if (currentStep < STEPS.length) return;
+  const fb = document.getElementById('feedback');
+  const cRecvA = placed['c-recv-a'];
+  const cRecvQ = placed['c-recv-q'];
+
+  if (cRecvA && cRecvQ && cRecvA.row < cRecvQ.row) {
+    fb.innerHTML = '<div class="fb-card fb-fail">' +
+      '<h3>Causal violation \u2014 you broke the conversation.</h3>' +
+      '<p>Server C received B\u2019s response <em>before</em> A\u2019s question. From C\u2019s perspective, someone answered a question that hasn\u2019t been asked yet.<br><br>' +
+      'This happened because the message from A to C traveled slower than the path A\u2009\u2192\u2009B\u2009\u2192\u2009C. ' +
+      'Physical clocks can\u2019t detect this \u2014 C has no way of knowing the response depends on the question. ' +
+      'This is exactly the problem Lamport clocks solve: by attaching a logical timestamp to each message, ' +
+      'C can reconstruct the causal order even when delivery order is wrong.</p></div>';
+  } else if (cRecvA && cRecvQ) {
+    fb.innerHTML = '<div class="fb-card fb-hint">' +
+      '<h3>Messages arrived in order \u2014 but the challenge asked for a violation.</h3>' +
+      '<p>C received the question before the response, so the conversation makes sense. ' +
+      'Try again: make the question arrive at C <em>after</em> the response. ' +
+      'Hint: the question has to travel far (A\u2009\u2192\u2009C) while the response takes a shortcut (B\u2009\u2192\u2009C).</p></div>';
+  }
+}
+
+function placeEvent(server, row) {
+  if (currentStep >= STEPS.length) return;
+  const step = STEPS[currentStep];
+  if (step.server !== server) return;
+  if (step.from && placed[step.from]) {
+    if (row <= placed[step.from].row) return;
+  }
+  if (step.id === 'b-send-a' && placed['b-recv-q']) {
+    if (row <= placed['b-recv-q'].row) return;
+  }
+  placed[step.id] = { row, server };
+  history.push(step.id);
+  currentStep++;
+  document.getElementById('undo-btn').disabled = false;
+  renderSteps();
+  renderSVG();
+  checkCompletion();
+}
+
+function undoLast() {
+  if (history.length === 0) return;
+  const lastId = history.pop();
+  delete placed[lastId];
+  currentStep = STEPS.findIndex(s => s.id === lastId);
+  document.getElementById('feedback').innerHTML = '';
+  document.getElementById('undo-btn').disabled = history.length === 0;
+  renderSteps();
+  renderSVG();
+}
+
+function resetAll() {
+  placed = {};
+  history = [];
+  currentStep = 0;
+  document.getElementById('feedback').innerHTML = '';
+  document.getElementById('undo-btn').disabled = true;
+  renderSteps();
+  renderSVG();
+}
+
+document.getElementById('tl-svg').addEventListener('click', e => {
+  const t = e.target;
+  if (t.dataset.row !== undefined) {
+    placeEvent(parseInt(t.dataset.server), parseInt(t.dataset.row));
+  }
+});
+
+renderSteps();
+renderSVG();
+</script>
+</body>
+</html>

@@ -1,0 +1,374 @@
+
+<style>
+  .lc-btn { padding: 5px 12px; font-size: 12px; cursor: pointer; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: transparent; color: var(--color-text-primary); transition: background .12s, transform .1s; }
+  .lc-btn:hover { background: var(--color-background-secondary); }
+  .lc-btn:active { transform: scale(0.97); }
+  .lc-btn.sel { border-color: #BA7517; background: #FAEEDA; color: #633806; }
+  .mode-btn { padding: 5px 14px; font-size: 12px; cursor: pointer; border-radius: var(--border-radius-md); border: 1px solid var(--color-border-secondary); background: transparent; color: var(--color-text-secondary); transition: all .15s; }
+  .mode-btn.active { border-color: #185FA5; background: #E6F1FB; color: #0C447C; font-weight: 500; }
+  .clock-card { display: flex; flex-direction: column; align-items: center; padding: 8px 12px; border-radius: var(--border-radius-md); min-width: 80px; }
+  .clock-val { font-size: 22px; font-weight: 500; font-family: var(--font-mono); }
+  .clock-label { font-size: 11px; margin-top: 2px; }
+  .rule-box { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 8px 12px; font-size: 12px; color: var(--color-text-secondary); font-family: var(--font-mono); line-height: 1.6; }
+  .flash { animation: flashPulse 0.6s ease-out; }
+  @keyframes flashPulse { 0% { transform: scale(1.15); } 100% { transform: scale(1); } }
+</style>
+
+<div style="padding: 0.25rem 0;">
+  <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap;">
+    <span style="font-size: 13px; color: var(--color-text-secondary);">Mode:</span>
+    <button class="mode-btn active" id="mode-event" onclick="setMode('event')">Place event</button>
+    <button class="mode-btn" id="mode-msg" onclick="setMode('message')">Send message</button>
+    <span style="margin-left: auto; font-size: 11px; color: var(--color-text-secondary);" id="mode-hint">Click on a timeline to place a local event</span>
+    <button class="lc-btn" onclick="undoLast()" id="undo-btn" disabled style="font-size:11px; color: var(--color-text-secondary);">Undo</button>
+    <button class="lc-btn" onclick="resetAll()" style="font-size:11px; color: var(--color-text-secondary);">Reset</button>
+  </div>
+
+  <div style="display: flex; gap: 8px; justify-content: center; margin-bottom: 12px;">
+    <div class="clock-card" style="background: #E6F1FB;">
+      <span class="clock-label" style="color: #0C447C;">Server A</span>
+      <span class="clock-val" style="color: #185FA5;" id="lc-a">0</span>
+    </div>
+    <div class="clock-card" style="background: #E1F5EE;">
+      <span class="clock-label" style="color: #085041;">Server B</span>
+      <span class="clock-val" style="color: #0F6E56;" id="lc-b">0</span>
+    </div>
+    <div class="clock-card" style="background: #EEEDFE;">
+      <span class="clock-label" style="color: #3C3489;">Server C</span>
+      <span class="clock-val" style="color: #534AB7;" id="lc-c">0</span>
+    </div>
+  </div>
+
+  <svg id="tl" width="100%" viewBox="0 0 680 460"></svg>
+
+  <div class="rule-box" style="margin-top: 10px;">
+    <span style="color: var(--color-text-primary); font-weight: 500;">Lamport clock rule:</span><br>
+    Local event: L = L + 1<br>
+    Send message: L = L + 1, attach L<br>
+    Receive message: L = max(L, L_received) + 1
+  </div>
+
+  <div id="log" style="margin-top: 10px; max-height: 120px; overflow-y: auto;"></div>
+</div>
+
+<script>
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const S = [
+  { label: 'Server A', x: 150, col: '#185FA5', bg: '#E6F1FB', dk: '#0C447C', lt: '#85B7EB' },
+  { label: 'Server B', x: 370, col: '#0F6E56', bg: '#E1F5EE', dk: '#085041', lt: '#5DCAA5' },
+  { label: 'Server C', x: 560, col: '#534AB7', bg: '#EEEDFE', dk: '#3C3489', lt: '#AFA9EC' },
+];
+const TOP = 55, BOT = 440, ROWS = 14;
+const rH = (BOT - TOP) / ROWS;
+function yFor(r) { return TOP + r * rH + rH / 2; }
+function rowFor(y) { return Math.max(0, Math.min(ROWS - 1, Math.round((y - TOP - rH / 2) / rH))); }
+
+let mode = 'event';
+let events = [];
+let messages = [];
+let history = [];
+let msgStart = null;
+let hoverPos = null;
+
+function setMode(m) {
+  mode = m;
+  msgStart = null;
+  document.getElementById('mode-event').className = 'mode-btn' + (m === 'event' ? ' active' : '');
+  document.getElementById('mode-msg').className = 'mode-btn' + (m === 'message' ? ' active' : '');
+  document.getElementById('mode-hint').textContent = m === 'event'
+    ? 'Click on a timeline to place a local event'
+    : (msgStart ? 'Now click on the destination timeline (must be lower)' : 'Click on a timeline to start a message');
+  render();
+}
+
+function computeLamport() {
+  let timeline = [];
+  events.forEach((e, i) => timeline.push({ kind: 'event', server: e.server, row: e.row, idx: i }));
+  messages.forEach((m, i) => {
+    timeline.push({ kind: 'send', server: m.from, row: m.fromRow, msgIdx: i });
+    timeline.push({ kind: 'recv', server: m.to, row: m.toRow, msgIdx: i });
+  });
+  timeline.sort((a, b) => a.row !== b.row ? a.row - b.row : a.server - b.server);
+
+  let lc = [0, 0, 0];
+  let msgTs = new Array(messages.length).fill(0);
+  let evLc = new Array(events.length).fill(0);
+  let recvLc = {};
+  let stateHistory = Array.from({ length: ROWS }, () => [0, 0, 0]);
+
+  let lastSnap = [0, 0, 0];
+  timeline.forEach(t => {
+    if (t.kind === 'event') {
+      lc[t.server]++;
+      evLc[t.idx] = lc[t.server];
+    } else if (t.kind === 'send') {
+      lc[t.server]++;
+      msgTs[t.msgIdx] = lc[t.server];
+    } else if (t.kind === 'recv') {
+      const old = lc[t.server];
+      lc[t.server] = Math.max(lc[t.server], msgTs[t.msgIdx]) + 1;
+      recvLc[t.msgIdx] = { old, received: msgTs[t.msgIdx], result: lc[t.server] };
+    }
+    stateHistory[t.row] = [...lc];
+  });
+
+  let rowState = Array.from({ length: ROWS }, () => null);
+  for (let r = 0; r < ROWS; r++) {
+    if (stateHistory[r][0] || stateHistory[r][1] || stateHistory[r][2]) {
+      rowState[r] = stateHistory[r];
+    }
+  }
+  let last = [0, 0, 0];
+  for (let r = 0; r < ROWS; r++) {
+    if (rowState[r]) last = rowState[r];
+    else rowState[r] = [...last];
+  }
+
+  return { lc, evLc, msgTs, recvLc, rowState };
+}
+
+function render() {
+  const { lc, evLc, msgTs, recvLc, rowState } = computeLamport();
+
+  document.getElementById('lc-a').textContent = lc[0];
+  document.getElementById('lc-b').textContent = lc[1];
+  document.getElementById('lc-c').textContent = lc[2];
+
+  ['lc-a', 'lc-b', 'lc-c'].forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.remove('flash');
+    void el.offsetWidth;
+    el.classList.add('flash');
+  });
+
+  const svg = document.getElementById('tl');
+  svg.innerHTML = '';
+  const defs = document.createElementNS(SVG_NS, 'defs');
+  defs.innerHTML = '<marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>';
+  svg.appendChild(defs);
+
+  S.forEach((s, i) => {
+    const r = document.createElementNS(SVG_NS, 'rect');
+    r.setAttribute('x', s.x - 45); r.setAttribute('y', 8);
+    r.setAttribute('width', 90); r.setAttribute('height', 30); r.setAttribute('rx', 8);
+    r.setAttribute('fill', s.bg); r.setAttribute('stroke', s.col); r.setAttribute('stroke-width', '0.5');
+    svg.appendChild(r);
+    const t = document.createElementNS(SVG_NS, 'text');
+    t.setAttribute('x', s.x); t.setAttribute('y', 27);
+    t.setAttribute('text-anchor', 'middle'); t.setAttribute('dominant-baseline', 'central');
+    t.setAttribute('font-size', '13'); t.setAttribute('font-weight', '500');
+    t.setAttribute('fill', s.dk); t.setAttribute('font-family', 'var(--font-sans)');
+    t.textContent = s.label;
+    svg.appendChild(t);
+
+    const line = document.createElementNS(SVG_NS, 'line');
+    line.setAttribute('x1', s.x); line.setAttribute('y1', TOP);
+    line.setAttribute('x2', s.x); line.setAttribute('y2', BOT);
+    line.setAttribute('stroke', 'var(--color-text-secondary)'); line.setAttribute('stroke-width', '0.8'); line.setAttribute('opacity', '0.15');
+    svg.appendChild(line);
+
+    for (let row = 0; row < ROWS; row++) {
+      const y = yFor(row);
+      const st = rowState[row];
+      const val = st ? st[i] : 0;
+
+      const tick = document.createElementNS(SVG_NS, 'line');
+      tick.setAttribute('x1', s.x - 3); tick.setAttribute('y1', y);
+      tick.setAttribute('x2', s.x + 3); tick.setAttribute('y2', y);
+      tick.setAttribute('stroke', 'var(--color-text-secondary)'); tick.setAttribute('stroke-width', '0.5'); tick.setAttribute('opacity', '0.2');
+      svg.appendChild(tick);
+
+      const lbl = document.createElementNS(SVG_NS, 'text');
+      const side = i === 0 ? -1 : (i === 2 ? 1 : -1);
+      lbl.setAttribute('x', s.x + side * 16);
+      lbl.setAttribute('y', y + 1);
+      lbl.setAttribute('text-anchor', side === -1 ? 'end' : 'start');
+      lbl.setAttribute('dominant-baseline', 'central');
+      lbl.setAttribute('font-size', '10'); lbl.setAttribute('font-family', 'var(--font-mono)');
+      lbl.setAttribute('fill', s.col); lbl.setAttribute('opacity', val > 0 ? '0.7' : '0.2');
+      lbl.textContent = val;
+      svg.appendChild(lbl);
+    }
+  });
+
+  messages.forEach((m, mi) => {
+    const y1 = yFor(m.fromRow), y2 = yFor(m.toRow);
+    const x1 = S[m.from].x, x2 = S[m.to].x;
+
+    const line = document.createElementNS(SVG_NS, 'line');
+    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+    line.setAttribute('stroke', '#BA7517'); line.setAttribute('stroke-width', '1.2');
+    line.setAttribute('stroke-dasharray', '5,3'); line.setAttribute('marker-end', 'url(#arr)');
+    svg.appendChild(line);
+
+    const ts = msgTs[mi];
+    if (ts > 0) {
+      const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+      const bg = document.createElementNS(SVG_NS, 'rect');
+      bg.setAttribute('x', mx - 14); bg.setAttribute('y', my - 10);
+      bg.setAttribute('width', 28); bg.setAttribute('height', 16); bg.setAttribute('rx', 4);
+      bg.setAttribute('fill', '#FAEEDA'); bg.setAttribute('stroke', '#EF9F27'); bg.setAttribute('stroke-width', '0.5');
+      svg.appendChild(bg);
+      const tl = document.createElementNS(SVG_NS, 'text');
+      tl.setAttribute('x', mx); tl.setAttribute('y', my);
+      tl.setAttribute('text-anchor', 'middle'); tl.setAttribute('dominant-baseline', 'central');
+      tl.setAttribute('font-size', '10'); tl.setAttribute('font-family', 'var(--font-mono)'); tl.setAttribute('font-weight', '500');
+      tl.setAttribute('fill', '#633806');
+      tl.textContent = 'L=' + ts;
+      svg.appendChild(tl);
+    }
+
+    if (recvLc[mi]) {
+      const info = recvLc[mi];
+      const rx = x2 + (m.to === 2 ? 18 : -18);
+      const anchor = m.to === 2 ? 'start' : 'end';
+      const detail = document.createElementNS(SVG_NS, 'text');
+      detail.setAttribute('x', rx); detail.setAttribute('y', y2 + 14);
+      detail.setAttribute('text-anchor', anchor); detail.setAttribute('dominant-baseline', 'central');
+      detail.setAttribute('font-size', '9'); detail.setAttribute('font-family', 'var(--font-mono)');
+      detail.setAttribute('fill', '#BA7517'); detail.setAttribute('opacity', '0.8');
+      detail.textContent = 'max(' + info.old + ',' + info.received + ')+1=' + info.result;
+      svg.appendChild(detail);
+    }
+  });
+
+  events.forEach((e, ei) => {
+    const y = yFor(e.row);
+    const s = S[e.server];
+    const c = document.createElementNS(SVG_NS, 'circle');
+    c.setAttribute('cx', s.x); c.setAttribute('cy', y);
+    c.setAttribute('r', 6); c.setAttribute('fill', s.col);
+    svg.appendChild(c);
+    const val = evLc[ei];
+    if (val > 0) {
+      const t = document.createElementNS(SVG_NS, 'text');
+      const side = e.server === 2 ? 1 : -1;
+      t.setAttribute('x', s.x + side * 18); t.setAttribute('y', y + 1);
+      t.setAttribute('text-anchor', side === -1 ? 'end' : 'start');
+      t.setAttribute('dominant-baseline', 'central');
+      t.setAttribute('font-size', '11'); t.setAttribute('font-weight', '500');
+      t.setAttribute('font-family', 'var(--font-mono)'); t.setAttribute('fill', s.dk);
+      t.textContent = 'L=' + val;
+      svg.appendChild(t);
+    }
+  });
+
+  if (msgStart) {
+    const s = S[msgStart.server];
+    const ring = document.createElementNS(SVG_NS, 'circle');
+    ring.setAttribute('cx', s.x); ring.setAttribute('cy', yFor(msgStart.row));
+    ring.setAttribute('r', 10); ring.setAttribute('fill', 'none');
+    ring.setAttribute('stroke', '#EF9F27'); ring.setAttribute('stroke-width', '2'); ring.setAttribute('stroke-dasharray', '3,2');
+    svg.appendChild(ring);
+  }
+
+  if (msgStart && hoverPos) {
+    const s = S[msgStart.server];
+    const ln = document.createElementNS(SVG_NS, 'line');
+    ln.setAttribute('x1', s.x); ln.setAttribute('y1', yFor(msgStart.row));
+    ln.setAttribute('x2', hoverPos.x); ln.setAttribute('y2', hoverPos.y);
+    ln.setAttribute('stroke', '#EF9F27'); ln.setAttribute('stroke-width', '1');
+    ln.setAttribute('stroke-dasharray', '3,3'); ln.setAttribute('opacity', '0.5');
+    svg.appendChild(ln);
+  }
+
+  const hitG = document.createElementNS(SVG_NS, 'g');
+  S.forEach((s, si) => {
+    for (let row = 0; row < ROWS; row++) {
+      const hit = document.createElementNS(SVG_NS, 'rect');
+      hit.setAttribute('x', s.x - 18); hit.setAttribute('y', yFor(row) - rH / 2);
+      hit.setAttribute('width', 36); hit.setAttribute('height', rH);
+      hit.setAttribute('fill', 'transparent'); hit.setAttribute('cursor', 'pointer');
+      hit.dataset.server = si; hit.dataset.row = row;
+      hitG.appendChild(hit);
+    }
+  });
+  svg.appendChild(hitG);
+
+  renderLog();
+}
+
+function renderLog() {
+  const { evLc, msgTs, recvLc } = computeLamport();
+  const el = document.getElementById('log');
+  let items = [];
+  events.forEach((e, i) => {
+    items.push({ row: e.row, html: '<span style="color:' + S[e.server].col + '">' + S[e.server].label + '</span> local event \u2192 L=' + evLc[i] });
+  });
+  messages.forEach((m, i) => {
+    items.push({ row: m.fromRow, html: '<span style="color:' + S[m.from].col + '">' + S[m.from].label + '</span> sends (L=' + msgTs[i] + ') \u2192 <span style="color:' + S[m.to].col + '">' + S[m.to].label + '</span>' });
+    if (recvLc[i]) {
+      items.push({ row: m.toRow, html: '<span style="color:' + S[m.to].col + '">' + S[m.to].label + '</span> receives: max(' + recvLc[i].old + ',' + recvLc[i].received + ')+1 = <strong>' + recvLc[i].result + '</strong>' });
+    }
+  });
+  items.sort((a, b) => a.row - b.row);
+  el.innerHTML = items.map(it => '<div style="font-size:12px;font-family:var(--font-mono);line-height:1.8;color:var(--color-text-secondary);">' + it.html + '</div>').join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+function occupied(server, row) {
+  for (const e of events) if (e.server === server && e.row === row) return true;
+  for (const m of messages) {
+    if (m.from === server && m.fromRow === row) return true;
+    if (m.to === server && m.toRow === row) return true;
+  }
+  return false;
+}
+
+function handleClick(server, row) {
+  if (mode === 'event') {
+    if (occupied(server, row)) return;
+    events.push({ server, row });
+    history.push({ type: 'event' });
+    document.getElementById('undo-btn').disabled = false;
+    render();
+  } else {
+    if (!msgStart) {
+      msgStart = { server, row };
+      document.getElementById('mode-hint').textContent = 'Now click on the destination timeline (must be lower)';
+      render();
+    } else {
+      if (server === msgStart.server) return;
+      if (row <= msgStart.row) return;
+      messages.push({ from: msgStart.server, fromRow: msgStart.row, to: server, toRow: row });
+      history.push({ type: 'message' });
+      document.getElementById('undo-btn').disabled = false;
+      msgStart = null;
+      hoverPos = null;
+      document.getElementById('mode-hint').textContent = 'Click on a timeline to start a message';
+      render();
+    }
+  }
+}
+
+function undoLast() {
+  if (history.length === 0) return;
+  const last = history.pop();
+  if (last.type === 'event') events.pop();
+  else messages.pop();
+  msgStart = null; hoverPos = null;
+  document.getElementById('undo-btn').disabled = history.length === 0;
+  render();
+}
+
+function resetAll() {
+  events = []; messages = []; history = []; msgStart = null; hoverPos = null;
+  document.getElementById('undo-btn').disabled = true;
+  render();
+}
+
+document.getElementById('tl').addEventListener('click', e => {
+  const t = e.target;
+  if (t.dataset.server !== undefined) handleClick(parseInt(t.dataset.server), parseInt(t.dataset.row));
+});
+
+document.getElementById('tl').addEventListener('mousemove', e => {
+  if (!msgStart) return;
+  const rect = document.getElementById('tl').getBoundingClientRect();
+  hoverPos = { x: (e.clientX - rect.left) * 680 / rect.width, y: (e.clientY - rect.top) * 460 / rect.height };
+  render();
+});
+
+render();
+</script>

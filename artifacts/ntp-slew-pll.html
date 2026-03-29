@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NTP Clock Discipline Loop</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: "Cambria Math", Cambria, Georgia, serif;
+    color: #2a2a2a;
+    background: #fff;
+    font-size: 17px;
+    line-height: 1.65;
+  }
+
+  .container {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 32px 20px 48px;
+  }
+
+  h1 {
+    font-family: "Montserrat", sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: #1a1a1a;
+  }
+
+  .intro {
+    font-size: 0.88rem;
+    color: #666;
+    margin-bottom: 28px;
+    line-height: 1.6;
+  }
+
+  .intro strong { color: #2a2a2a; }
+
+  /* ── Controls ── */
+  .controls {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    padding: 16px 20px;
+    background: #fdfbfc;
+    border: 1px solid #e8dde5;
+    border-radius: 8px;
+  }
+
+  .control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .control-label {
+    font-family: "Montserrat", sans-serif;
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .control-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  input[type=range] { width: 110px; accent-color: #d4829c; }
+
+  .control-val {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.78rem;
+    min-width: 50px;
+    color: #5c4f5e;
+  }
+
+  .btn {
+    font-family: "Montserrat", sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 7px 18px;
+    border: 2px solid #e0d5dc;
+    border-radius: 6px;
+    background: #fff;
+    color: #5c4f5e;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .btn:hover { border-color: #d4829c; background: #fdf2f5; }
+  .btn-primary { background: #2a2a2a; border-color: #2a2a2a; color: #fff; }
+  .btn-primary:hover { background: #444; border-color: #444; }
+
+  .btn-group { display: flex; gap: 8px; margin-left: auto; }
+
+  /* ── Loop diagram ── */
+  .loop-wrap {
+    position: relative;
+    border: 1px solid #e8dde5;
+    border-radius: 10px;
+    background: #fff;
+    padding: 20px;
+    overflow: hidden;
+  }
+
+  /* ── Iteration counter ── */
+  .iteration-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid #eee;
+  }
+
+  .iter-label {
+    font-family: "Montserrat", sans-serif;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .iter-val {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.85rem;
+    color: #5c4f5e;
+  }
+
+  .converged {
+    font-family: "Montserrat", sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #3cb371;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .converged.show { opacity: 1; }
+
+  @media (max-width: 550px) {
+    .controls { flex-direction: column; align-items: flex-start; }
+    .btn-group { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>NTP Phase Locked Loop Overview</h1>
+  <p class="intro">
+    This is an abstracted simulation of how NTP gradually slews the local clock.
+  </p>
+
+  <div class="controls">
+    <div class="control-group">
+      <div class="control-label">Initial offset</div>
+      <div class="control-row">
+        <input type="range" id="offset-slider" min="-100" max="100" value="72" step="4" oninput="updateLabels()">
+        <span class="control-val" id="offset-label">+72 ms</span>
+      </div>
+    </div>
+    <div class="control-group">
+      <div class="control-label">Loop gain</div>
+      <div class="control-row">
+        <input type="range" id="gain-slider" min="10" max="50" value="30" step="5" oninput="updateLabels()">
+        <span class="control-val" id="gain-label">30%</span>
+      </div>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-primary" id="step-btn" onclick="stepOnce()">Step</button>
+      <button class="btn" id="auto-btn" onclick="toggleAuto()">Auto</button>
+      <button class="btn" onclick="resetLoop()">Reset</button>
+    </div>
+  </div>
+
+  <div class="loop-wrap">
+    <svg id="loop-svg" width="100%" viewBox="0 0 660 310">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M2 2L8 5L2 8" fill="none" stroke="#ccc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+        <marker id="arr-active" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M2 2L8 5L2 8" fill="none" stroke="#d4829c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+      </defs>
+
+      <!-- ── Node positions: horizontal flow, feedback loops back underneath ── -->
+
+      <!-- NTP Server (reference) -->
+      <rect x="10" y="60" width="108" height="56" rx="8" fill="#fdf0ec" stroke="#d4714a" stroke-width="1.5" id="box-ref"/>
+      <text x="64" y="83" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="11" font-weight="600" fill="#c0512d">NTP Server</text>
+      <text x="64" y="100" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="12" font-weight="500" fill="#c0512d" id="val-ref">0.000 ms</text>
+
+      <!-- Arrow ref → compare -->
+      <line x1="118" y1="88" x2="163" y2="88" stroke="#ccc" stroke-width="1.5" id="edge-1" marker-end="url(#arr)"/>
+
+      <!-- Compare -->
+      <rect x="166" y="60" width="108" height="56" rx="8" fill="#faf2f7" stroke="#c494b5" stroke-width="1.5" id="box-compare"/>
+      <text x="220" y="79" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="11" font-weight="600" fill="#9a6590">Compare</text>
+      <text x="220" y="100" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="13" font-weight="500" fill="#9a6590" id="val-offset">θ = —</text>
+
+      <!-- Arrow compare → filter -->
+      <line x1="274" y1="88" x2="319" y2="88" stroke="#ccc" stroke-width="1.5" id="edge-2" marker-end="url(#arr)"/>
+
+      <!-- Loop Filter -->
+      <rect x="322" y="60" width="108" height="56" rx="8" fill="#fef8ee" stroke="#ddb85e" stroke-width="1.5" id="box-filter"/>
+      <text x="376" y="79" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="11" font-weight="600" fill="#b8862e">Loop Filter</text>
+      <text x="376" y="100" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="13" font-weight="500" fill="#b8862e" id="val-correction">adj = —</text>
+
+      <!-- Arrow filter → adjust -->
+      <line x1="430" y1="88" x2="475" y2="88" stroke="#ccc" stroke-width="1.5" id="edge-3" marker-end="url(#arr)"/>
+
+      <!-- Adjust tick rate -->
+      <rect x="478" y="60" width="108" height="56" rx="8" fill="#f0faf2" stroke="#6dc990" stroke-width="1.5" id="box-adjust"/>
+      <text x="532" y="79" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="11" font-weight="600" fill="#2d8a57">Adjust</text>
+      <text x="532" y="100" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="13" font-weight="500" fill="#2d8a57" id="val-tickrate">rate = —</text>
+
+      <!-- Arrow down from adjust to system clock -->
+      <line x1="532" y1="116" x2="532" y2="155" stroke="#ccc" stroke-width="1.5" id="edge-4" marker-end="url(#arr)"/>
+
+      <!-- System Clock (wide, at bottom right) -->
+      <rect x="448" y="158" width="168" height="56" rx="8" fill="#fff" stroke="#ddd" stroke-width="1.5" id="box-clock"/>
+      <text x="532" y="178" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="11" font-weight="600" fill="#555">System Clock</text>
+      <text x="532" y="199" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="14" font-weight="500" fill="#2a2a2a" id="val-clock">—</text>
+
+      <!-- Feedback: clock → back to compare (underneath) -->
+      <path d="M448 186 L220 186 L220 186" stroke="#ccc" stroke-width="1.2" fill="none" stroke-dasharray="5 4" id="edge-fb-h"/>
+      <line x1="220" y1="186" x2="220" y2="116" stroke="#ccc" stroke-width="1.2" stroke-dasharray="5 4" id="edge-fb-v" marker-end="url(#arr)"/>
+      <text x="334" y="180" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="9" fill="#ccc">feedback</text>
+
+      <!-- ── Offset bar visualization ── -->
+      <text x="12" y="250" font-family="Montserrat,sans-serif" font-size="10" font-weight="600" fill="#aaa">OFFSET</text>
+
+      <!-- Zero line -->
+      <line x1="80" y1="250" x2="640" y2="250" stroke="#eee" stroke-width="1"/>
+      <text x="640" y="248" text-anchor="end" font-family="IBM Plex Mono,monospace" font-size="9" fill="#ccc">0</text>
+
+      <!-- The bar -->
+      <rect x="360" y="240" width="0" height="20" rx="4" fill="#d4829c" opacity="0.35" id="offset-bar"/>
+      <text x="360" y="275" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="11" fill="#d4829c" id="offset-bar-label"></text>
+
+      <!-- Scale ticks -->
+      <text x="80" y="290" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#ddd">-100</text>
+      <text x="220" y="290" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#ddd">-50</text>
+      <text x="360" y="290" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#ddd">0</text>
+      <text x="500" y="290" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#ddd">+50</text>
+      <text x="640" y="290" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#ddd">+100</text>
+
+      <!-- Animated pulse circle (hidden by default) -->
+      <circle cx="0" cy="0" r="6" fill="#d4829c" opacity="0" id="pulse"/>
+    </svg>
+
+    <div class="iteration-bar">
+      <div>
+        <span class="iter-label">Poll cycle</span>
+        <span class="iter-val" id="iter-count">0</span>
+      </div>
+      <span class="converged" id="converged-msg">✓ Converged</span>
+    </div>
+  </div>
+</div>
+
+<script>
+let offset = 72;
+let iteration = 0;
+let autoInterval = null;
+let animating = false;
+
+function updateLabels() {
+  const v = parseInt(document.getElementById('offset-slider').value);
+  document.getElementById('offset-label').textContent = (v >= 0 ? '+' : '') + v + ' ms';
+  const g = parseInt(document.getElementById('gain-slider').value);
+  document.getElementById('gain-label').textContent = g + '%';
+}
+
+function resetLoop() {
+  if (autoInterval) { clearInterval(autoInterval); autoInterval = null; }
+  document.getElementById('auto-btn').textContent = 'Auto';
+  animating = false;
+  offset = parseInt(document.getElementById('offset-slider').value);
+  iteration = 0;
+
+  document.getElementById('val-offset').textContent = 'θ = —';
+  document.getElementById('val-correction').textContent = 'adj = —';
+  document.getElementById('val-tickrate').textContent = 'rate = —';
+  document.getElementById('val-clock').textContent = '—';
+  document.getElementById('val-ref').textContent = '0.000 ms';
+  document.getElementById('iter-count').textContent = '0';
+  document.getElementById('converged-msg').classList.remove('show');
+
+  updateBar(offset);
+  resetEdgeColors();
+}
+
+function resetEdgeColors() {
+  ['edge-1','edge-2','edge-3','edge-4'].forEach(id => {
+    const el = document.getElementById(id);
+    el.setAttribute('stroke', '#ccc');
+    el.setAttribute('marker-end', 'url(#arr)');
+  });
+  ['box-compare','box-filter','box-adjust','box-clock'].forEach(id => {
+    document.getElementById(id).setAttribute('stroke-width', '1.5');
+  });
+}
+
+function updateBar(currentOffset) {
+  const bar = document.getElementById('offset-bar');
+  const label = document.getElementById('offset-bar-label');
+  // Map -100..+100 to x positions. center = 360, scale: 280px per 100ms
+  const center = 360;
+  const scale = 2.8; // px per ms
+  const barWidth = Math.abs(currentOffset) * scale;
+  const barX = currentOffset >= 0 ? center : center - barWidth;
+
+  bar.setAttribute('x', barX);
+  bar.setAttribute('width', barWidth);
+
+  const labelX = currentOffset >= 0 ? center + barWidth / 2 : center - barWidth / 2;
+  label.setAttribute('x', labelX);
+  label.textContent = Math.abs(currentOffset) < 0.1 ? '0' : ((currentOffset >= 0 ? '+' : '') + currentOffset.toFixed(1));
+
+  // Color shift as it converges
+  if (Math.abs(currentOffset) < 1) {
+    bar.setAttribute('fill', '#3cb371');
+    label.setAttribute('fill', '#3cb371');
+  } else {
+    bar.setAttribute('fill', '#d4829c');
+    label.setAttribute('fill', '#d4829c');
+  }
+}
+
+function stepOnce() {
+  if (animating) return;
+  if (Math.abs(offset) < 0.05) return;
+
+  animating = true;
+  const gain = parseInt(document.getElementById('gain-slider').value) / 100;
+  const correction = -offset * gain;
+  const newOffset = offset + correction;
+  const tickAdj = correction > 0 ? 'faster' : 'slower';
+
+  iteration++;
+
+  // Animate through the nodes sequentially
+  const steps = [
+    // Step 1: highlight edge ref→compare, show offset in compare
+    () => {
+      resetEdgeColors();
+      highlight('edge-1');
+      highlightBox('box-compare');
+      document.getElementById('val-offset').textContent = 'θ = ' + (offset >= 0 ? '+' : '') + offset.toFixed(1) + ' ms';
+    },
+    // Step 2: highlight edge compare→filter, show correction
+    () => {
+      unhighlight('edge-1');
+      unhighlightBox('box-compare');
+      highlight('edge-2');
+      highlightBox('box-filter');
+      document.getElementById('val-correction').textContent = 'adj = ' + (correction >= 0 ? '+' : '') + correction.toFixed(1) + ' ms';
+    },
+    // Step 3: highlight edge filter→adjust, show tick rate change
+    () => {
+      unhighlight('edge-2');
+      unhighlightBox('box-filter');
+      highlight('edge-3');
+      highlightBox('box-adjust');
+      document.getElementById('val-tickrate').textContent = tickAdj;
+    },
+    // Step 4: highlight edge adjust→clock, update clock and offset bar
+    () => {
+      unhighlight('edge-3');
+      unhighlightBox('box-adjust');
+      highlight('edge-4');
+      highlightBox('box-clock');
+      offset = newOffset;
+      document.getElementById('val-clock').textContent = (offset >= 0 ? '+' : '') + offset.toFixed(1) + ' ms off';
+      updateBar(offset);
+      document.getElementById('iter-count').textContent = iteration;
+    },
+    // Step 5: settle — reset highlights
+    () => {
+      unhighlight('edge-4');
+      unhighlightBox('box-clock');
+
+      if (Math.abs(offset) < 0.1) {
+        document.getElementById('converged-msg').classList.add('show');
+        document.getElementById('val-offset').textContent = 'θ ≈ 0';
+        document.getElementById('val-clock').textContent = 'synchronized ✓';
+        if (autoInterval) { clearInterval(autoInterval); autoInterval = null; document.getElementById('auto-btn').textContent = 'Auto'; }
+      }
+      animating = false;
+    }
+  ];
+
+  let i = 0;
+  function next() {
+    if (i < steps.length) {
+      steps[i]();
+      i++;
+      setTimeout(next, 280);
+    }
+  }
+  next();
+}
+
+function highlight(edgeId) {
+  const el = document.getElementById(edgeId);
+  el.setAttribute('stroke', '#d4829c');
+  el.setAttribute('stroke-width', '2.5');
+  el.setAttribute('marker-end', 'url(#arr-active)');
+}
+
+function unhighlight(edgeId) {
+  const el = document.getElementById(edgeId);
+  el.setAttribute('stroke', '#ccc');
+  el.setAttribute('stroke-width', '1.5');
+  el.setAttribute('marker-end', 'url(#arr)');
+}
+
+function highlightBox(boxId) {
+  document.getElementById(boxId).setAttribute('stroke-width', '2.5');
+}
+
+function unhighlightBox(boxId) {
+  document.getElementById(boxId).setAttribute('stroke-width', '1.5');
+}
+
+function toggleAuto() {
+  if (autoInterval) {
+    clearInterval(autoInterval);
+    autoInterval = null;
+    document.getElementById('auto-btn').textContent = 'Auto';
+  } else {
+    document.getElementById('auto-btn').textContent = 'Stop';
+    stepOnce();
+    autoInterval = setInterval(() => {
+      if (!animating && Math.abs(offset) >= 0.05) stepOnce();
+    }, 1600);
+  }
+}
+
+// Init
+resetLoop();
+</script>
+</body>
+</html>

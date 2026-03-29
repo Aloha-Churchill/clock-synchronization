@@ -10,17 +10,15 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   :root {
-    --parchment: #faf6f0;
+    --parchment: #fdfbfc;
     --ink: #2c2418;
     --ink-light: #6b5d4d;
     --ink-faint: #a89a88;
     --sepia: #d4c5a9;
     --sepia-dark: #b8a786;
     --accent: #c0512d;
-    --accent-glow: #e8714d;
     --utc-blue: #1a5276;
-    --utc-blue-light: #d6eaf8;
-    --card-bg: #f5f0e6;
+    --card-bg: #faf7f9;
     --font-display: 'Playfair Display', Georgia, serif;
     --font-body: 'Source Sans 3', 'Helvetica Neue', sans-serif;
   }
@@ -29,52 +27,20 @@
     font-family: var(--font-body);
     background: var(--parchment);
     color: var(--ink);
-    min-height: 100vh;
-    overflow-x: hidden;
+    overflow: hidden;
   }
 
   .page {
     max-width: 900px;
     margin: 0 auto;
-    padding: 40px 24px 60px;
+    padding: 20px 28px 12px;
   }
 
-  h1 {
-    font-family: var(--font-display);
-    font-size: 28px;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    margin-bottom: 6px;
-  }
-  .subtitle {
-    font-size: 14px;
-    color: var(--ink-light);
-    font-weight: 300;
-    margin-bottom: 40px;
-  }
-
-  /* ── Timeline track ── */
-  .timeline {
-    position: relative;
-    padding: 0 0 0 0;
-  }
-
+  /* ── Evenly-spaced icon row ── */
   .track {
-    position: relative;
     display: flex;
     align-items: flex-start;
     gap: 0;
-    padding-bottom: 24px;
-  }
-
-  .track::before {
-    content: '';
-    position: absolute;
-    top: 64px;
-    left: 40px;
-    right: 40px;
-    height: 2px;
-    background: linear-gradient(90deg, var(--sepia) 0%, var(--sepia-dark) 50%, var(--sepia) 100%);
   }
 
   .node {
@@ -110,49 +76,35 @@
     box-shadow: 0 0 0 4px rgba(192, 81, 45, 0.15), 0 4px 16px rgba(0,0,0,0.08);
     transform: translateY(-3px);
   }
-  .node.utc .node-icon {
-    border-color: var(--utc-blue);
-  }
+  .node.utc .node-icon { border-color: var(--utc-blue); }
   .node.utc:hover .node-icon,
   .node.utc.active .node-icon {
     border-color: var(--utc-blue);
     box-shadow: 0 0 0 4px rgba(26, 82, 118, 0.15), 0 4px 16px rgba(0,0,0,0.08);
   }
-
-  .node-icon svg {
-    width: 40px;
-    height: 40px;
-  }
+  .node-icon svg { width: 40px; height: 40px; }
 
   .node-dot {
     width: 10px;
     height: 10px;
     border-radius: 50%;
     background: var(--sepia-dark);
-    margin: 8px 0 10px;
+    margin: 8px 0 6px;
     transition: background 0.2s;
+    flex-shrink: 0;
   }
   .node:hover .node-dot,
   .node.active .node-dot { background: var(--accent); }
   .node.utc .node-dot { background: var(--utc-blue); }
 
-  .node-year {
-    font-family: var(--font-display);
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--ink-light);
-    margin-bottom: 4px;
-  }
   .node-label {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--ink-faint);
     text-align: center;
     font-weight: 500;
-    line-height: 1.3;
-    max-width: 90px;
+    line-height: 1.25;
+    max-width: 80px;
   }
-  .node.active .node-year { color: var(--accent); }
-  .node.utc.active .node-year { color: var(--utc-blue); }
   .node.active .node-label { color: var(--ink); }
 
   .utc-badge {
@@ -169,31 +121,35 @@
     text-transform: uppercase;
   }
 
-  /* ── Detail panel ── */
+  /* ── Proportional ruler ── */
+  .ruler-wrap { width: 100%; margin-top: 2px; }
+  #ruler-svg { display: block; width: 100%; }
+
+  /* ── Detail panel (always visible) ── */
   .detail-panel {
-    margin-top: 16px;
     background: #fff;
     border: 1px solid var(--sepia);
     border-radius: 10px;
     overflow: hidden;
-    max-height: 0;
-    opacity: 0;
-    transition: max-height 0.4s ease, opacity 0.3s ease, margin 0.3s ease;
+    height: 210px;
+    position: relative;
+    margin-top: 10px;
   }
-  .detail-panel.open {
-    max-height: 500px;
-    opacity: 1;
-    margin-top: 24px;
-  }
-
-  .detail-inner {
+  .detail-empty {
     display: flex;
-    gap: 0;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-size: 13px;
+    color: var(--ink-faint);
+    font-style: italic;
   }
+  .detail-inner { display: none; height: 100%; }
+  .detail-panel.filled .detail-empty { display: none; }
+  .detail-panel.filled .detail-inner { display: flex; }
 
   .detail-illustration {
-    width: 220px;
-    min-height: 200px;
+    width: 200px;
     flex-shrink: 0;
     background: var(--card-bg);
     display: flex;
@@ -201,120 +157,66 @@
     justify-content: center;
     border-right: 1px solid var(--sepia);
   }
-  .detail-illustration svg {
-    width: 140px;
-    height: 140px;
-  }
+  .detail-illustration svg { width: 130px; height: 130px; }
 
   .detail-text {
     flex: 1;
-    padding: 28px 28px 24px;
+    padding: 22px 36px 20px 24px;
+    overflow-y: auto;
   }
   .detail-text h2 {
     font-family: var(--font-display);
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 700;
-    margin-bottom: 4px;
+    margin-bottom: 3px;
   }
   .detail-text .era {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--ink-faint);
     font-weight: 500;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
   }
-  .detail-text .blurb {
-    font-size: 14px;
-    line-height: 1.65;
-    color: var(--ink-light);
-    font-weight: 400;
-  }
-  .detail-text .blurb p + p {
-    margin-top: 10px;
-  }
+  .detail-text .blurb { font-size: 13px; line-height: 1.65; color: var(--ink-light); }
+  .detail-text .blurb p + p { margin-top: 8px; }
 
   .detail-close {
     position: absolute;
-    top: 12px;
-    right: 14px;
+    top: 10px;
+    right: 12px;
     border: none;
     background: none;
     font-size: 18px;
     color: var(--ink-faint);
     cursor: pointer;
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: background 0.15s;
+    z-index: 2;
   }
   .detail-close:hover { background: var(--card-bg); color: var(--ink); }
-
-  .panel-wrapper {
-    position: relative;
-  }
-
-  /* ── Pointer triangle ── */
-  .pointer {
-    position: absolute;
-    top: -10px;
-    width: 20px;
-    height: 10px;
-    transition: left 0.3s ease;
-    display: none;
-  }
-  .detail-panel.open + .pointer-track .pointer,
-  .pointer.visible { display: block; }
-
-  .instruction {
-    text-align: center;
-    font-size: 13px;
-    color: var(--ink-faint);
-    margin-top: 20px;
-    font-style: italic;
-  }
-  .instruction.hidden { display: none; }
-
-  @media (max-width: 600px) {
-    .node-icon { width: 60px; height: 60px; }
-    .node-icon svg { width: 30px; height: 30px; }
-    .track::before { top: 50px; }
-    .detail-inner { flex-direction: column; }
-    .detail-illustration {
-      width: 100%;
-      min-height: 120px;
-      border-right: none;
-      border-bottom: 1px solid var(--sepia);
-    }
-  }
 </style>
 </head>
 <body>
 <div class="page">
-  <h1>A Brief History of Timekeeping</h1>
-  <p class="subtitle">From shadows to atoms — click each milestone to explore</p>
-
-  <div class="timeline">
-    <div class="track" id="track">
-      <!-- Nodes injected by JS -->
-    </div>
-
-    <div class="panel-wrapper">
-      <div class="detail-panel" id="detail-panel">
-        <button class="detail-close" onclick="closePanel()" aria-label="Close">×</button>
-        <div class="detail-inner">
-          <div class="detail-illustration" id="detail-illus"></div>
-          <div class="detail-text">
-            <h2 id="detail-title"></h2>
-            <div class="era" id="detail-era"></div>
-            <div class="blurb" id="detail-blurb"></div>
-          </div>
-        </div>
+  <div class="track" id="track"></div>
+  <div class="ruler-wrap">
+    <svg id="ruler-svg" height="68"></svg>
+  </div>
+  <div class="detail-panel" id="detail-panel">
+    <div class="detail-empty">Click a milestone above to explore</div>
+    <button class="detail-close" onclick="closePanel()" aria-label="Close">×</button>
+    <div class="detail-inner">
+      <div class="detail-illustration" id="detail-illus"></div>
+      <div class="detail-text">
+        <h2 id="detail-title"></h2>
+        <div class="era" id="detail-era"></div>
+        <div class="blurb" id="detail-blurb"></div>
       </div>
     </div>
-
-    <p class="instruction" id="instruction">Click a milestone above to learn more</p>
   </div>
 </div>
 
@@ -323,10 +225,11 @@ const items = [
   {
     id: 'sundial',
     year: '~1500 BCE',
+    yearNum: -1500,
     label: 'Sundials',
     era: 'Ancient Egypt & Babylonia',
     utc: false,
-    blurb: `<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Sed vel purus at nunc tincidunt fermentum eu non velit.</p><p>Praesent ullamcorper risus id sapien commodo, vel blandit nulla facilisis. Integer nec odio at nisl cursus volutpat id a libero.</p>`,
+    blurb: `<p>Sundials were used to tell the time by using the shadow that was cast by the position of the sun in the sky.</p>`,
     iconSmall: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
       <circle cx="20" cy="28" rx="14" ry="6" stroke="#6b5d4d" stroke-width="1.5" fill="none"/>
       <line x1="20" y1="28" x2="20" y2="8" stroke="#c0512d" stroke-width="1.5" stroke-linecap="round"/>
@@ -337,18 +240,14 @@ const items = [
     iconLarge: `<svg viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
       <ellipse cx="70" cy="95" rx="50" ry="18" stroke="#6b5d4d" stroke-width="2" fill="#faf6f0"/>
       <ellipse cx="70" cy="95" rx="50" ry="18" fill="#d4c5a9" opacity="0.3"/>
-      <!-- hour lines -->
       <line x1="70" y1="95" x2="35" y2="75" stroke="#a89a88" stroke-width="0.8"/>
       <line x1="70" y1="95" x2="45" y2="60" stroke="#a89a88" stroke-width="0.8"/>
       <line x1="70" y1="95" x2="60" y2="50" stroke="#a89a88" stroke-width="0.8"/>
       <line x1="70" y1="95" x2="80" y2="50" stroke="#a89a88" stroke-width="0.8"/>
       <line x1="70" y1="95" x2="95" y2="60" stroke="#a89a88" stroke-width="0.8"/>
       <line x1="70" y1="95" x2="105" y2="75" stroke="#a89a88" stroke-width="0.8"/>
-      <!-- gnomon -->
       <line x1="70" y1="95" x2="70" y2="30" stroke="#c0512d" stroke-width="2.5" stroke-linecap="round"/>
-      <!-- shadow -->
       <line x1="70" y1="95" x2="40" y2="68" stroke="#2c2418" stroke-width="1.5" stroke-linecap="round" opacity="0.25"/>
-      <!-- sun -->
       <circle cx="110" cy="25" r="14" fill="#e8c84a" opacity="0.25"/>
       <circle cx="110" cy="25" r="8" fill="#e8c84a" opacity="0.5"/>
       <circle cx="110" cy="25" r="4" fill="#e8c84a"/>
@@ -357,10 +256,11 @@ const items = [
   {
     id: 'incense',
     year: '~600 CE',
+    yearNum: 600,
     label: 'Incense Clock',
     era: 'Song Dynasty, China',
     utc: false,
-    blurb: `<p>Donec sed eros vel turpis blandit laoreet. Fusce auctor lacus a ante congue, vitae consequat justo elementum. Nulla facilisi morbi tristique senectus et netus.</p><p>Curabitur accumsan velit sit amet leo ornare, eget bibendum magna tincidunt. Aliquam erat volutpat sed do eiusmod tempor incididunt ut labore.</p>`,
+    blurb: `<p>It was noticed that the rate that incense burns is relativly constant and thus this method of timekeeping measures how much of an incense stick has burned. Interestingly, there was sometimes an evenly distributed mix of different scents for the incense clock, so the changing of scents indicated the passing of a certain amount of time. Another advantage was that because this did not rely on the sun, this method of telling time could work at night.</p>`,
     iconSmall: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
       <rect x="12" y="16" width="16" height="20" rx="2" stroke="#6b5d4d" stroke-width="1.5" fill="none"/>
       <line x1="16" y1="20" x2="24" y2="20" stroke="#a89a88" stroke-width="0.8"/>
@@ -369,20 +269,16 @@ const items = [
       <path d="M20 16 Q18 12 20 8 Q22 4 20 2" stroke="#c0512d" stroke-width="1" fill="none" stroke-linecap="round" opacity="0.6"/>
     </svg>`,
     iconLarge: `<svg viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <!-- vessel -->
       <rect x="30" y="45" width="80" height="75" rx="6" stroke="#6b5d4d" stroke-width="2" fill="#faf6f0"/>
       <rect x="30" y="45" width="80" height="75" rx="6" fill="#d4c5a9" opacity="0.2"/>
-      <!-- incense lines -->
       <line x1="42" y1="58" x2="98" y2="58" stroke="#a89a88" stroke-width="1"/>
       <line x1="42" y1="68" x2="98" y2="68" stroke="#a89a88" stroke-width="1"/>
       <line x1="42" y1="78" x2="98" y2="78" stroke="#a89a88" stroke-width="1"/>
       <line x1="42" y1="88" x2="98" y2="88" stroke="#a89a88" stroke-width="1"/>
       <line x1="42" y1="98" x2="98" y2="98" stroke="#a89a88" stroke-width="1"/>
       <line x1="42" y1="108" x2="98" y2="108" stroke="#a89a88" stroke-width="1"/>
-      <!-- burn line -->
       <line x1="42" y1="68" x2="72" y2="68" stroke="#c0512d" stroke-width="2.5" stroke-linecap="round"/>
       <circle cx="72" cy="68" r="3" fill="#c0512d" opacity="0.6"/>
-      <!-- smoke -->
       <path d="M70 45 Q65 35 70 25 Q75 15 70 8" stroke="#a89a88" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.4"/>
       <path d="M75 45 Q80 32 75 22 Q70 12 75 5" stroke="#a89a88" stroke-width="1" fill="none" stroke-linecap="round" opacity="0.25"/>
     </svg>`
@@ -390,62 +286,53 @@ const items = [
   {
     id: 'pendulum',
     year: '1656',
+    yearNum: 1656,
     label: 'Pendulum Clock',
     era: 'Christiaan Huygens, Netherlands',
     utc: false,
-    blurb: `<p>Maecenas tempus tellus eget condimentum rhoncus. Sed consequat, leo eget bibendum sodales, augue velit cursus nunc, quis gravida magna mi a libero.</p><p>Fusce vulputate eleifend sapien. Vestibulum purus quam, scelerisque ut mollis sed, nonummy id metus. Nullam accumsan lorem in dui praesent.</p>`,
+    blurb: `<p>Pendulum clocks leveraged the consistent swinging of a pendulum to keep time. Inspired by Galileo's experiments with pendulums, Huygens was able to build a remarkably consistent clock for the time.</p>`,
     iconSmall: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
       <rect x="14" y="6" width="12" height="8" rx="2" stroke="#6b5d4d" stroke-width="1.5" fill="none"/>
       <line x1="20" y1="14" x2="20" y2="30" stroke="#6b5d4d" stroke-width="1.2"/>
       <circle cx="20" cy="32" r="4" stroke="#c0512d" stroke-width="1.5" fill="none"/>
     </svg>`,
     iconLarge: `<svg viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <!-- clock body -->
       <rect x="40" y="12" width="60" height="45" rx="6" stroke="#6b5d4d" stroke-width="2" fill="#faf6f0"/>
-      <!-- clock face -->
       <circle cx="70" cy="34" r="16" stroke="#6b5d4d" stroke-width="1.5" fill="#fff"/>
       <line x1="70" y1="34" x2="70" y2="22" stroke="#2c2418" stroke-width="1.5" stroke-linecap="round"/>
       <line x1="70" y1="34" x2="80" y2="30" stroke="#2c2418" stroke-width="1.2" stroke-linecap="round"/>
       <circle cx="70" cy="34" r="2" fill="#2c2418"/>
-      <!-- 12 hour ticks -->
       <line x1="70" y1="19" x2="70" y2="21" stroke="#6b5d4d" stroke-width="1"/>
       <line x1="70" y1="47" x2="70" y2="49" stroke="#6b5d4d" stroke-width="1"/>
       <line x1="55" y1="34" x2="57" y2="34" stroke="#6b5d4d" stroke-width="1"/>
       <line x1="83" y1="34" x2="85" y2="34" stroke="#6b5d4d" stroke-width="1"/>
-      <!-- pendulum rod -->
       <line x1="70" y1="57" x2="70" y2="110" stroke="#6b5d4d" stroke-width="1.5"/>
-      <!-- pendulum bob -->
       <circle cx="70" cy="115" r="10" stroke="#c0512d" stroke-width="2" fill="none"/>
       <circle cx="70" cy="115" r="4" fill="#c0512d" opacity="0.3"/>
-      <!-- swing arc -->
       <path d="M50 115 Q70 125 90 115" stroke="#a89a88" stroke-width="0.8" fill="none" stroke-dasharray="3 3" opacity="0.5"/>
     </svg>`
   },
   {
     id: 'quartz',
     year: '1927',
+    yearNum: 1927,
     label: 'Quartz Clock',
     era: 'Bell Labs, USA',
     utc: false,
-    blurb: `<p>Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Proin pharetra nonummy pede mollis pretium integer tincidunt.</p><p>Aenean vulputate eleifend tellus. Aenean leo ligula, porttitor eu, consequat vitae eleifend ac enim. Aliquam lorem ante dapibus in viverra quis feugiat.</p>`,
+    blurb: `<p>The quartz clock leverages the piezolelectric property (the idea that mechanical stress produces electric charge and vice versa) of the quartz crystal. Essentially, when a voltage is applied to a quartz crystal, the crystal oscillates at a frequency and produces another signal that occurs at that constant resonant frequency.</p>`,
     iconSmall: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <!-- crystal shape -->
       <polygon points="20,6 28,14 28,28 20,36 12,28 12,14" stroke="#6b5d4d" stroke-width="1.5" fill="none"/>
       <polygon points="20,12 24,16 24,26 20,30 16,26 16,16" fill="#c0512d" opacity="0.15"/>
       <line x1="16" y1="20" x2="24" y2="20" stroke="#c0512d" stroke-width="0.8" opacity="0.5"/>
     </svg>`,
     iconLarge: `<svg viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <!-- crystal -->
       <polygon points="70,10 105,35 105,95 70,120 35,95 35,35" stroke="#6b5d4d" stroke-width="2" fill="#faf6f0"/>
       <polygon points="70,25 92,42 92,88 70,105 48,88 48,42" fill="#c0512d" opacity="0.08"/>
       <polygon points="70,40 80,48 80,82 70,90 60,82 60,48" fill="#c0512d" opacity="0.08"/>
-      <!-- vibration lines -->
       <line x1="48" y1="65" x2="92" y2="65" stroke="#c0512d" stroke-width="0.8" opacity="0.4"/>
       <path d="M48 55 Q58 50 70 55 Q82 60 92 55" stroke="#c0512d" stroke-width="0.8" fill="none" opacity="0.3"/>
       <path d="M48 75 Q58 80 70 75 Q82 70 92 75" stroke="#c0512d" stroke-width="0.8" fill="none" opacity="0.3"/>
-      <!-- frequency label -->
       <text x="70" y="68" text-anchor="middle" font-family="Georgia, serif" font-size="10" fill="#c0512d" opacity="0.6">32,768 Hz</text>
-      <!-- leads -->
       <line x1="55" y1="120" x2="55" y2="135" stroke="#6b5d4d" stroke-width="1.5" stroke-linecap="round"/>
       <line x1="85" y1="120" x2="85" y2="135" stroke="#6b5d4d" stroke-width="1.5" stroke-linecap="round"/>
     </svg>`
@@ -453,10 +340,11 @@ const items = [
   {
     id: 'atomic',
     year: '1955',
+    yearNum: 1955,
     label: 'Atomic Clock',
-    era: 'NPL, UK — basis of UTC (1967)',
+    era: 'NPL, UK, basis of UTC (1967)',
     utc: true,
-    blurb: `<p>Etiam ultricies nisi vel augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. Etiam rhoncus maecenas tempus tellus eget condimentum rhoncus.</p><p>Sed consequat, leo eget bibendum sodales, augue velit cursus nunc. Donec vitae sapien ut libero venenatis faucibus nullam quis ante.</p>`,
+    blurb: `<p>The atomic clock is the most consistent clock in existance. It relies on the resonance frequency of atoms as the "tick" mechanism and measures this to keep near perfect time.</p>`,
     iconSmall: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
       <circle cx="20" cy="20" r="3" fill="#1a5276"/>
       <ellipse cx="20" cy="20" rx="14" ry="6" stroke="#1a5276" stroke-width="1.2" fill="none" transform="rotate(-30 20 20)"/>
@@ -464,19 +352,15 @@ const items = [
       <ellipse cx="20" cy="20" rx="14" ry="6" stroke="#1a5276" stroke-width="1.2" fill="none" transform="rotate(90 20 20)"/>
     </svg>`,
     iconLarge: `<svg viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <!-- nucleus -->
       <circle cx="70" cy="70" r="10" fill="#1a5276" opacity="0.2"/>
       <circle cx="70" cy="70" r="5" fill="#1a5276" opacity="0.5"/>
       <circle cx="70" cy="70" r="2" fill="#1a5276"/>
-      <!-- orbits -->
       <ellipse cx="70" cy="70" rx="55" ry="22" stroke="#1a5276" stroke-width="1.5" fill="none" transform="rotate(-35 70 70)" opacity="0.6"/>
       <ellipse cx="70" cy="70" rx="55" ry="22" stroke="#1a5276" stroke-width="1.5" fill="none" transform="rotate(35 70 70)" opacity="0.6"/>
       <ellipse cx="70" cy="70" rx="55" ry="22" stroke="#1a5276" stroke-width="1.5" fill="none" transform="rotate(90 70 70)" opacity="0.6"/>
-      <!-- electrons -->
       <circle cx="25" cy="52" r="4" fill="#1a5276" opacity="0.7"/>
       <circle cx="105" cy="45" r="4" fill="#1a5276" opacity="0.7"/>
       <circle cx="70" cy="15" r="4" fill="#1a5276" opacity="0.7"/>
-      <!-- Cs label -->
       <text x="70" y="132" text-anchor="middle" font-family="Georgia, serif" font-size="11" fill="#1a5276" font-style="italic" opacity="0.6">Caesium-133</text>
     </svg>`
   }
@@ -484,56 +368,116 @@ const items = [
 
 const track = document.getElementById('track');
 const panel = document.getElementById('detail-panel');
-const instruction = document.getElementById('instruction');
 let activeId = null;
 
-// Build nodes
-items.forEach((item, i) => {
+// Build nodes (icon + dot + label, no year — year shown on ruler)
+items.forEach(item => {
   const node = document.createElement('div');
   node.className = 'node' + (item.utc ? ' utc' : '');
   node.dataset.id = item.id;
   node.onclick = () => toggleItem(item.id);
-
   node.innerHTML = `
     <div class="node-icon">
       ${item.iconSmall}
       ${item.utc ? '<span class="utc-badge">UTC</span>' : ''}
     </div>
     <div class="node-dot"></div>
-    <div class="node-year">${item.year}</div>
     <div class="node-label">${item.label}</div>
   `;
   track.appendChild(node);
 });
 
-function toggleItem(id) {
-  if (activeId === id) {
-    closePanel();
-    return;
+function buildRuler() {
+  const rulerSvg = document.getElementById('ruler-svg');
+  const W = track.offsetWidth;
+  if (W === 0) return;
+
+  // Even X centers from flex layout
+  const nodes = track.querySelectorAll('.node');
+  const evenX = Array.from(nodes).map(n => n.offsetLeft + n.offsetWidth / 2);
+
+  // Proportional positions with minimum gap enforcement
+  const years = items.map(i => i.yearNum);
+  const minY = years[0], maxY = years[years.length - 1];
+  const span = maxY - minY;
+  const padX = 36;
+  const usable = W - 2 * padX;
+  const minGap = 52;
+
+  let propX = years.map(y => padX + ((y - minY) / span) * usable);
+
+  for (let i = 1; i < propX.length; i++) {
+    if (propX[i] < propX[i - 1] + minGap) propX[i] = propX[i - 1] + minGap;
+  }
+  const maxAllowed = W - padX;
+  if (propX[propX.length - 1] > maxAllowed) {
+    const scale = (maxAllowed - propX[0]) / (propX[propX.length - 1] - propX[0]);
+    propX = propX.map((p, i) => i === 0 ? p : propX[0] + (p - propX[0]) * scale);
   }
 
+  const H = 68;
+  const rulerY = 32; // y of horizontal baseline
+
+  let svg = '';
+
+  // Horizontal ruler baseline
+  svg += `<line x1="${padX}" y1="${rulerY}" x2="${W - padX}" y2="${rulerY}"
+                stroke="#d4c5a9" stroke-width="2" stroke-linecap="round"/>`;
+
+  items.forEach((item, i) => {
+    const color   = item.utc ? '#1a5276' : '#b8a786';
+    const txColor = item.utc ? '#1a5276' : '#6b5d4d';
+    const ex = +evenX[i].toFixed(1);
+    const px = +propX[i].toFixed(1);
+
+    // Dashed diagonal line from proportional tick up to even icon position
+    svg += `<line x1="${px}" y1="${rulerY}"
+                  x2="${ex}" y2="4"
+                  stroke="${color}" stroke-width="1" opacity="0.5"
+                  stroke-dasharray="4 3"/>`;
+
+    // Small upward-pointing triangle arrowhead at icon end (y=4)
+    svg += `<polygon points="${ex},0 ${ex - 4},8 ${ex + 4},8"
+                     fill="${color}" opacity="0.65"/>`;
+
+    // Tick mark below baseline at proportional position
+    svg += `<line x1="${px}" y1="${rulerY - 5}" x2="${px}" y2="${rulerY + 9}"
+                  stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>`;
+
+    // Year label — stagger vertically if close to the previous tick
+    const prevPX = i > 0 ? propX[i - 1] : -999;
+    const labelY = (px - prevPX < 62) ? rulerY + 24 : rulerY + 18;
+    svg += `<text x="${px}" y="${labelY}"
+                  text-anchor="middle"
+                  font-family="'Source Sans 3', sans-serif"
+                  font-size="10" fill="${txColor}">${item.year}</text>`;
+  });
+
+  rulerSvg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  rulerSvg.innerHTML = svg;
+}
+
+// Two rAF passes to ensure flex layout is complete before measuring
+requestAnimationFrame(() => requestAnimationFrame(buildRuler));
+window.addEventListener('resize', buildRuler);
+
+function toggleItem(id) {
+  if (activeId === id) { closePanel(); return; }
   activeId = id;
   const item = items.find(i => i.id === id);
-
-  // Update active node
   document.querySelectorAll('.node').forEach(n => n.classList.remove('active'));
   document.querySelector(`.node[data-id="${id}"]`).classList.add('active');
-
-  // Fill panel
   document.getElementById('detail-title').textContent = item.label;
   document.getElementById('detail-era').textContent = item.era;
   document.getElementById('detail-blurb').innerHTML = item.blurb;
   document.getElementById('detail-illus').innerHTML = item.iconLarge;
-
-  panel.classList.add('open');
-  instruction.classList.add('hidden');
+  panel.classList.add('filled');
 }
 
 function closePanel() {
   activeId = null;
-  panel.classList.remove('open');
+  panel.classList.remove('filled');
   document.querySelectorAll('.node').forEach(n => n.classList.remove('active'));
-  instruction.classList.remove('hidden');
 }
 </script>
 </body>
