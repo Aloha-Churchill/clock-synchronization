@@ -201,14 +201,62 @@ And now, when somebody asks you what time it is, that question alone just might 
 
 Thank you for reading, and I hope you enjoyed! 🌸
 
+
+
+
 ## Sources
-+ https://www.youtube.com/watch?v=RrGHtl5qJfk
-+ https://courses.csail.mit.edu/6.885/spring06/notes/lect6.pdf
-+ https://arpitbhayani.me/blogs/clock-sync-nightmare/
-+ https://en.wikipedia.org/wiki/History_of_timekeeping_devices
-+ https://en.wikipedia.org/wiki/Universal_Time#History
-+ https://sookocheff.com/post/time/lamport-clock/
-+ https://sookocheff.com/post/time/how-does-ntp-work/
-+ https://www.cl.cam.ac.uk/teaching/2122/ConcDisSys/dist-sys-notes.pdf
-+ https://www.youtube.com/playlist?list=PLeKd45zvjcDFUEv_ohr_HdUFe97RItdiB
-+ https://www.youtube.com/watch?v=p2BxAu6WZI8
+
+- MIT CSAIL. *Clock Synchronization Lecture Notes*.  
+  https://courses.csail.mit.edu/6.885/spring06/notes/lect6.pdf
+
+- Cambridge University. *Distributed Systems Notes*.  
+  https://www.cl.cam.ac.uk/teaching/2122/ConcDisSys/dist-sys-notes.pdf
+
+- Bhayani, A. *The Clock Synchronization Nightmare*.  
+  https://arpitbhayani.me/blogs/clock-sync-nightmare/
+
+- Sookocheff, K. *Lamport Clocks*.  
+  https://sookocheff.com/post/time/lamport-clock/
+
+- Sookocheff, K. *How Does NTP Work?*  
+  https://sookocheff.com/post/time/how-does-ntp-work/
+
+- *History of Timekeeping Devices*. Wikipedia.  
+  https://en.wikipedia.org/wiki/History_of_timekeeping_devices
+
+- *Universal Time – History*. Wikipedia.  
+  https://en.wikipedia.org/wiki/Universal_Time#History
+
+- YouTube. *The Rest is Science: What Day Is It, Really?*.  
+  https://www.youtube.com/watch?v=RrGHtl5qJfk
+
+- YouTube. *Video*.  
+  https://www.youtube.com/watch?v=p2BxAu6WZI8
+
+- YouTube. *Distributed Systems Playlist*.  
+  https://www.youtube.com/playlist?list=PLeKd45zvjcDFUEv_ohr_HdUFe97RItdiB
+
+- Anthropic. *Claude Code*.  
+  https://claude.ai/
+
+- Google. *Gemini (AI Assistant)*.  
+  https://gemini.google.com/
+
+### A note on sources
+A few of the sources that I especially recommend are...
+1. The distributed systems playlist linked above. [Martin Kleppmann](https://martin.kleppmann.com/) released this lecture series. It is an incredibly well explained introduction to distributed systems. It's amazing to me that world-class lectures like this are released for public consumption on YouTube!
+2. Kevin Sookocheff's "How does NTP Work" blog. My NTP explanation is based off of this blog. It goes into the nuances of NTP that most sources do not.
+3. The podcast/YouTube video "What Day Is It, Really?". I love this podcast in general, but if you're curious this episode gets into the question of how we actually determined the days and months and years...like why do a bunch of months have odd days, and who determined what year it is?
+
+In addition, I used Gemini for building better intuition about the types of clocks in your computer. This varies by the system, which is part of the reason finding a 
+single source of information for this was difficult and thus was an easier task on Gemini. I've attached the sources that Gemini said it used below as additional references. 
+
+
+Core Sources & References
++ Leslie Lamport (1978): "Time, Clocks, and the Ordering of Events in a Distributed System" – The foundational paper for the "Happened-Before" relationship and Logical Clocks.
++ RFC 5905 (Network Time Protocol Version 4): The official IETF specification detailing NTP architecture, stratum levels, and algorithms for clock offset and round-trip delay.
++ BIPM (Bureau International des Poids et Mesures): Standards for UTC (Coordinated Universal Time) and the integration of TAI (International Atomic Time) with UT1 (Earth's rotation).
++ Fidge (1988) & Mattern (1989): Independent papers that established the theory for Vector Clocks to track partial ordering and concurrency in distributed systems.
++ Intel 64 and IA-32 Architectures Software Developer’s Manuals: Technical documentation regarding hardware timers, including the TSC (Time Stamp Counter) and HPET (High Precision Event Timer).
++ POSIX / Linux Kernel Documentation: Specifications for clock types, specifically the difference between CLOCK_REALTIME (wall-clock) and CLOCK_MONOTONIC (incremental system time).
++ IEEE 1588-2008: The standard for PTP (Precision Time Protocol), often compared to NTP for high-precision local network synchronization.
