@@ -16,7 +16,7 @@ of glancing down at a watch or checking a phone. You probably have a little cloc
 screen you are reading this on. Take a little break to check it. Unless your clock is not synchronized or you prefer to print out the contents of the blog on paper for reading later for some mysterious reason, it should be pretty simple to tell the time.
 
 For me, at the moment of writing this, it's March 22 12:58 pm 2026. I have implicit trust in this time. If
-I ask somebody in my same time zone, what time is it? they will have the same answer. So what is this time that most of us in the
+I ask somebody in my same time zone what time it is, they will have the same answer. So what actually *is* this time that most of us in the
 world agree on?
 
 ### A Brief History of Timers
@@ -28,7 +28,7 @@ Humans have found ingenious methods to track time since antiquity. You can click
 ## <span class="zone-dot foundations"></span> Coordinated Universal Time (UTC)
 
 As the world grew more connected due to innovations in transportation and communication,
-there was building pressure to adopt a "universal time" that everybody agreed on. Ideally, this universal clock would be perfectly consistent (ticking at a steady rate) and align with the sun's position in the sky.
+there was building pressure to adopt a "universal time" that everybody agreed on. Ideally, this universal clock would be perfectly consistent (ticking at a steady rate) and align well with astronomical observations. What does it mean to "align well with astronomical observations"? Simply that we ideally want 12 pm each day to be when the sun is directly overhead and we want the same date each year to correspond to the same position of the Earth's rotation around the sun.
 
 But satisfying both of these requirments posed an immediate problem because the sun's position in the sky is not a reliable clock. The "solar day", or the time between consecutive solar noons, is not constant throughout the year. There are two primary factors at play here:
 
@@ -39,7 +39,9 @@ Centuries ago, astronomers found a solution to this problem by inventing "mean s
 
 ::artifact[solar-vs-mean-time.html]{height=900}
 
-However, another pesky problem was discovered with using mean solar time. It still depended on Earth's rotation around the sun as being a consistent timekeeper. After the discovery of the atomic clock, scientists discovered this was not the case: Earth's rotation around the sun is slowing down. Forget about clocks, this sounds like a big problem for us Earthlings! Let me put your concerns at ease: a day today is roughly 1.7 to 2.3 millisecond longer than a day was 100 years ago. Even mean solar time was not perfectly consistent.
+However, another pesky problem was discovered with even with using mean solar time. Mean solar time still depended on Earth's rotation around the sun as being a consistent timekeeper. After the discovery of the atomic clock, scientists discovered this was not the case: Earth's rotation around the sun is slowing down. Wait a second (whatever that means)! Forget about clocks...this sounds like a big problem for us Earthlings! Let me put your concerns at ease: a day today is roughly 1.7 to 2.3 millisecond longer than a day was 100 years ago, so we don't have anything to worry about for a long time. 
+
+But for ultra precise clocks, this is a problem: mean solar time is not perfectly consistent.
 
 In 1967, following the invention of the atomic clock, the second was redefined. Instead of using the Earth's movement as the basis for a second, the resonant frequency of a Cesium-133 atom was used.
 
@@ -47,36 +49,41 @@ In 1967, following the invention of the atomic clock, the second was redefined. 
 
 You might look at this definition and throw up your hands in anguish! Why choose such a difficult number of hyperfine level jump thingys? The inpronouncable number was chosen to be that which most closely matched the previous planetary defintion of the second. As for the deeper physics, there are resources at the end of this blog for more information on how this quanity is measured.
 
-Time from an atomic clock looses less than 1 second every 30 billion years. International Atomic Time uses a weighted average of atomic clocks all over the world. It does not adjust for the slowing of the earth's orbit. Finally, we can get to understanding **Coordinated Universal Time**, or UTC. UTC uses the tick of atomic clocks as it's base so that it meets the requirement of being a perfectly consistent clocks. However, it also uses something called a "leap second" to account for the slowdown in our Earth's orbit. A leap second is announced months in advance by a consortium of time keeping scientists and a second is added or subtracted from a day in the year to re-align the atomic clock with very accuratly measured mean solar time, or UT1. 
+Time from an atomic clock looses less than 1 second every **30 billion years**. Dang. A standard called International Atomic Time (TAI) uses a weighted average of atomic clocks all over the world to define time. TAI does not adjust for the slowing of the earth's orbit. 
 
-However, this addition or subtraction of a second caused engineering headaches for synchronizing systems and was recently abolished in 2022. This decision will take effect by 2035.
+Finally, we can get to understanding **Coordinated Universal Time**, or UTC. UTC uses the tick of atomic clocks as it's base so that it meets the requirement of being a perfectly consistent clocks. However, it also uses something called a "leap second" to account for the slowdown in our Earth's orbit. A leap second is announced months in advance by a consortium of time keeping scientists and a second is added or subtracted from a day in the year to re-align the atomic clock with very accurately measured mean solar time, or UT1. 
+
+However, this addition or subtraction of a second caused engineering headaches for synchronizing systems and was recently abolished in 2022. This decision will take effect by 2035. It's amazing to think that our standard of time is still being amended to this day!
 
 ## <span class="zone-dot foundations"></span> Clocks Inside Your Computer
 
-Now that we've covered a bit about the history of time and seen how complex it can get, let's turn to something that is most likely more relevant to your personal coding journey: the sources of time in your own computer.
+Now that we've covered a bit about the history of a universal time and seen how complex it can get, let's turn to something that is probably more relevant to your personal coding journey: the sources of time in your own computer.
 
 It's very likely the device you are reading this on has several clocks.
 
 ### Physical Timers
 There are usually at least 2 physical quartz crystal oscillators in a modern PC.
 1. The Real Time Clock (RTC): A battery powered quartz crystal that keeps time even when your PC is completely powered off and can last years on battery power alone. 
-2. The CPU Clock: A crystal that can oscillate at higher frequencies than the RTC and provides the base frequency for the CPU, RAM, and Bus. The CPU takes the base frequency of this oscillator and uses a phase-locked loop to multiply it to the CPU speed and drive the computation. The Time Stamp Counter (TSC) is based on the ticks of this clock.
+
+2. The CPU Clock: A crystal that can oscillate at higher frequencies than the RTC and provides the base frequency for the CPU, RAM, and Bus. The CPU takes the base frequency of this oscillator and uses a phase-locked loop (which we will see later) to multiply it to the CPU speed and drive the computation. The Time Stamp Counter (TSC) is based on the ticks of this clock.
+
+
 
 ### Logical Abstractions
-The operating system typically provides logical abstractions for you to interface with time.
-1. The "System Clock/ Wall Clock" (CLOCK_REALTIME): This is a calculated value, not a raw counter. At boot, the Kernel reads from the RTC and then starts the counter in memory, every time the TSC ticks a certain number of time, the Kernel increments this "Wall Clock" variable. This clock allows the "Wall Clock" time to change with NTP (which we will investigate in the near future). Because of this, the Wall Clock does not monotonoically increase. This computes the UTC.
-2. The "Steady" Clock (CLOCK_MONOTONIC): This clock starts at 0 when the Kernel initializes. It ignores the RTC and NTP entirely. It only looks at the high-speed system oscillator and increases monotonoically.
+Since reading long numbers from counter is not pleasing for most people, the operating system typically provides logical abstractions for you to interface with time.
+1. The "System Clock/ Wall Clock" (`CLOCK_REALTIME`): This is a calculated value, not a raw counter. At boot, the Kernel reads from the RTC and then starts the counter in memory, every time the TSC ticks a certain number of time, the Kernel increments this "Wall Clock" variable. This clock allows the "Wall Clock" time to change with NTP (which we will investigate in the near future). Because of this, the Wall Clock does not monotonoically increase. This computes the UTC.
+
+2. The "Steady" Clock (`CLOCK_MONOTONIC`): This clock starts at 0 when the Kernel initializes. It ignores the RTC and NTP entirely. It only looks at the high-speed system oscillator and increases monotonoically.
 
 ::artifact[clock-quiz.html]{height=600}
 
 
 ## <span class="zone-dot sync"></span> Synchronization
-Before we start to learn how to synchronize, we need to understand what synchronization is and why it is important. 
+Before we start to learn how to synchronize time & events across systems, we need to understand what synchronization is and why it is important. 
 
 > Synchronization is the coordination of multiple processes, threads, or hardware devices to ensure orderly execution, data consistency, and prevent conflicts like race conditions.
 
-Synchronization is vital to anything that is trying to communicate. In your everyday life, understanding what happened first or at what time a 
-friend is expecting you to meet them is important for how you understand the world and operate in it, so too is synchronization in computer science.
+Synchronization is vital to anything that is trying to communicate. In your everyday life, understanding what happened first (mix the batter *before* putting it in the oven) or at what time a friend is expecting you to meet them is important for how you understand the world and operate in it. Just like in real-life, synchronization in computer systems allows computers to "understand" both the time when an event occurs and the order in which events occur.
 
 
 In this blog post, we will be focused on synchronization across **hardware devices**. Within this topic, we can further divide synchronization across computers into two primary problems: 
@@ -91,7 +98,7 @@ Its goal is to update each client (computer) to have their clock match as close 
 
 #### Why might we need this?
 Synchronizing our local clock is helpful for processes like certificate validation. For example, [SSL certificates](https://www.cloudflare.com/learning/ssl/what-is-an-ssl-certificate/) use the system time to check if they are still valid.
-But perhaps most importantly, it's nice for us to see the correct time and be able to add timestamps when logging and look back on them later with and understanding that those timestamps mean something to us.
+But perhaps most importantly, it's nice for us to see the correct time and be able to add timestamps when logging and look back on them later with an understanding of what those timestamps represent ("oops, there was a system crash at 12:15 pm after I ran this command").
 
 
 Ok, let's look at how NTP helps synchronize our local clocks.
@@ -102,15 +109,16 @@ Explore the below interactable to understand the "stratum system".
 
 Let's call a system with a more accurate clock the **server** and a system with a less accurate clock the **client**.
 How do you update a client to have a more accurate time? This might seem like an easy problem, but take a minute to think about it...maybe not so easy after all.
-For example, if the server sends a message to the client with the server's local time, there is a delay in the network from the sending and recieving of this packet, so 
+
+For example, if the server sends a message to the client with the server's local time, there is a delay in the network from the sending and recieving of this "updated correct time packet", so 
 we can't just blindly update the client time to the time in that packet. We somehow need to deduce the time of flight of the packet between the client and server.
 
 NTP proposes a simple, but clever mechanism for doing just that.
 
 1. The client sends a message at its local time $t0$ to the server that it wants an update. It records $t0$.
 2. The server records the time the message was received from the client in its local time, $t1$.
-3. The server prepares the updated message and records the time it sends the message out, $t2$.
-4. The client receives the message from the server and records its local time $t3$
+3. The server prepares the updated message and records the time it sends the message out, $t2$. Inside this packet is also $t1$ and of course the more accurate local time that the server has.
+4. The client receives the message from the server and records its local time $t3$.
 
 We now have the times: $t0$, $t1$, $t2$, and $t3$. 
 At the end of this process, the client knows all of these timestamps because as part of the message the server sends the client to update its time, it also sends $t1$ and $t2$.
@@ -121,6 +129,8 @@ To synchronize a client clock with a server, NTP calculates two primary values: 
 The delay represents the total time the request and response packets spent traveling across the network. It excludes the time the server spent processing the request.
 
 $$\delta = (t_3 - t_0) - (t_2 - t_1)$$
+
+This formula might look mysterious on first glance but should become more clear when we get to the interactive.
 
 ### Clock Offset
 The offset is the difference between the client’s clock and the server’s clock. To derive the formula for $\theta$, we assume that the network delay is **symmetric**, meaning the time to send the request is equal to the time to receive the response ($\delta/2$ each way).
@@ -158,24 +168,28 @@ shifted to the correct time.
 ## <span class="zone-dot distributed"></span> Event Ordering
 
 ### Local time isn't reliable...
-Like we saw, NTP is useful, but not sufficient for synchronization. 
-It keeps clocks close enough for logging and certificates, but never exact. Remember: NTP's offset formula assumes symmetric network delay, and in real networks that's never guaranteed. 
+NTP is useful, but not sufficient for synchronization. 
+It keeps clocks close enough for logging and certificates, but never exact. Why? Remember: NTP's offset formula assumes symmetric network delay, and in real networks that's never guaranteed. 
 There's always residual error. And even a few milliseconds of disagreement between two machines is enough to reverse the apparent order of events. 
-Imagine a server A sending a question to server B and C. Server B has the answer and sends this to server A and C. How might server C observe 
-B's answer before A's question?
+
+Let's see how: 
+Imagine a server A sending a question, like "What's the temperature in Zurich?" to server B and C. Server B has the answer and sends this to server A and C ("It's 6 degrees celcius"). How might server C observe 
+B's answer before A's question? In other words, server C sees "It's 6 degrees C" before "What's the temperature in Zurich".
 
 ::artifact[causal-violation.html]{height=600}
 
 
 Oh despair! Oh trechary! It seems we cannot rely on physical time alone to solve the problem of synchronization. 
 
-But fear not. There are some clever people who came up with clever solutions to even be able to syncrhonize when the time is off.
+But fear not. There are some clever people who came up with clever solutions to synchronize events correctly (place events in order) even when the time is not accurate.
 
 ## <span class="zone-dot distributed"></span> Lamport Clocks
 
 Fundamentally, distributed systems have no shared clock. Each server ticks independently, and as we just saw, messages can arrive out of order. So how do we reason about what happened before what?
 
-In 1978, Leslie Lamport had a wonderful insight: we don't actually need to know what time something happened, we just need to know whether one event could have caused another. He formalized this as the **happens-before** relation, written as $a \to b$:
+In 1978, Leslie Lamport had a wonderful insight: we don't actually need to know what time something happened, we just need to know whether one event could have caused another. He formalized this as the **happens-before** relation, written as $a \to b$. In our previous example, A's question "What is the temperature in Zurich" triggered B's reply "It's 6 degrees C". So `A's question -> B's reply`
+
+Here's three rules that guarentee a happens-before relation:
 
 * If $a$ and $b$ occur on the same server, and $a$ comes first, then $a \to b$.
 * If $a$ is the sending of a message and $b$ is its receipt, then $a \to b$.
@@ -183,7 +197,50 @@ In 1978, Leslie Lamport had a wonderful insight: we don't actually need to know 
 
 Any two events that aren't linked by this chain are **concurrent** which means neither caused the other, and no clock trick can (or should) force an ordering between them.
 
-A **Lamport clock** turns this relation into a number. Each server maintains a counter $L$, and follows three rules: increment before any local event, attach the counter when sending a message, and on receipt set $L = \max(L_{local}, L_{received}) + 1$. The result is a guarantee: if $a \to b$, then $L(a) < L(b)$. Causality always flows uphill.
+A **Lamport clock** turns this relation into a number. Each server maintains a counter $L$, and follows three rules: increment before any local event, attach the counter when sending a message, and on receipt set $L = \max(L_{local}, L_{received}) + 1$. The result is a guarantee: if $a \to b$, then $L(a) < L(b)$. Causality always flows uphill. 
+
+Let's go back to our example one more time.
+
+#### Lamport Clock Event Ordering
+
+* Step 1: Node A sends the Question
+    * Node A Local Clock: Increments from 0 to **1**.
+    * Permanent Message Timestamp: **1**
+    * Action: Node A sends "What is the temperature in Zurich?" with timestamp **1**.
+
+* Step 2: Node B receives the Question
+    * Node B Local Clock: Receives message with timestamp **1**. Its internal clock was 0.
+    * Update Calculation: $max(0, 1) + 1 = 2$.
+    * Node B New Local Clock: **2**
+
+* Step 3: Node B sends the Answer
+    * Node B Local Clock: Increments from 2 to **3** to perform the "send" event.
+    * Permanent Message Timestamp: **3**
+    * Action: Node B sends "It is 6°C" with timestamp **3**.
+
+* Step 4: Node C receives the Answer (The "Fast" Message)
+    * Node C Local Clock (Before): **3** (due to 3 prior internal events).
+    * Permanent Message Timestamp Received: **3**
+    * Update Calculation: $max(3, 3) + 1 = 4$.
+    * Node C New Local Clock: **4**
+    * Result: The answer is processed and logged at Node C local time **4**.
+
+* Step 5: Node C receives the Question (The "Slow" Message)
+    * Node C Local Clock (Before): **4**.
+    * Permanent Message Timestamp Received: **1**
+    * Update Calculation: $max(4, 1) + 1 = 5$.
+    * Node C New Local Clock: **5**
+    * Result: The question is processed and logged at Node C local time **5**.
+
+To determine the "True Order" of the distributed system, you look at the *Permanent Message Timestamps*, not the arrival order at Node C:
+
+1. Question (Timestamp **1**)
+2. Answer (Timestamp **3**)
+
+Because **1 < 3**, the system knows the question happened before the answer. The local clock at Node C (4 and 5) ensures that any future messages Node C sends will have a timestamp greater than 5, preserving the timeline for the rest of the network.
+
+
+Explore the below interactive to understand this better.
 
 ::artifact[lamport-clock.html]{height=600}
 

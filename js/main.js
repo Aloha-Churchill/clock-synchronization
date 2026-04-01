@@ -65,6 +65,57 @@ function buildTOC(contentEl) {
     li.appendChild(a);
     list.appendChild(li);
   });
+
+  setupScrollSpy(headings);
+}
+
+function setupScrollSpy(headings) {
+  if (!headings.length) return;
+
+  const tocLinks = document.querySelectorAll('#toc-list a');
+
+  function setActive(id) {
+    tocLinks.forEach((a) => {
+      const isActive = a.getAttribute('href') === '#' + id;
+      a.classList.toggle('toc-active', isActive);
+    });
+  }
+
+  // Track which headings are visible; highlight the topmost one.
+  const visible = new Set();
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          visible.add(entry.target.id);
+        } else {
+          visible.delete(entry.target.id);
+        }
+      });
+
+      // Pick the heading that appears first in document order.
+      let activeId = null;
+      headings.forEach((h) => {
+        if (visible.has(h.id) && activeId === null) activeId = h.id;
+      });
+
+      // If nothing visible (scrolled past all), keep the last heading before viewport.
+      if (!activeId) {
+        const scrollY = window.scrollY + window.innerHeight / 2;
+        let best = null;
+        headings.forEach((h) => {
+          if (h.getBoundingClientRect().top + window.scrollY <= scrollY) best = h.id;
+        });
+        activeId = best;
+      }
+
+      if (activeId) setActive(activeId);
+    },
+    { rootMargin: '0px 0px -60% 0px', threshold: 0 }
+  );
+
+  headings.forEach((h) => observer.observe(h));
 }
 
 async function init() {
